@@ -92,6 +92,8 @@ export default function ProductDetailPage() {
   }, [product?.id, product?.category_id, product?.brand_id]);
 
   const handleAddToCart = () => {
+    if (!product) return;
+    
     // Validate variant selection
     if (product.variants) {
       const missingVariant = product.variants.find(
@@ -111,6 +113,8 @@ export default function ProductDetailPage() {
   };
 
   const handleShare = () => {
+    if (!product) return;
+    
     if (navigator.share) {
       navigator.share({
         title: product.name,
@@ -124,15 +128,15 @@ export default function ProductDetailPage() {
   };
 
   const calculateTotalPrice = () => {
-    let total = product.discount_price || product.price;
+    if (!product) return 0;
+    
+    let total = product.discount_price || product.original_price;
     if (product.variants) {
       product.variants.forEach((variant) => {
         const selected = selectedVariants[variant.name];
         if (selected) {
-          const option = variant.options.find((opt) => opt.value === selected);
-          if (option) {
-            total += option.price_modifier;
-          }
+          // Handle price adjustment from variant
+          total += variant.price_adjustment || 0;
         }
       });
     }
@@ -177,8 +181,8 @@ export default function ProductDetailPage() {
               <ChevronRight size={16} />
               <Link href="/shop" className="hover:text-[#FF7A19]">Shop</Link>
               <ChevronRight size={16} />
-              <Link href={`/shop?category=${product.category}`} className="hover:text-[#FF7A19]">
-                {product.category}
+              <Link href={`/shop?category=${product.category_slug || product.category_id}`} className="hover:text-[#FF7A19]">
+                {product.category_name || 'Category'}
               </Link>
               <ChevronRight size={16} />
               <span className="text-[#1A1A1A] font-medium">{product.name}</span>
@@ -198,13 +202,13 @@ export default function ProductDetailPage() {
                     fill
                     className="object-contain p-8"
                   />
-                  {product.discount_percentage && product.discount_percentage > 0 && (
-                    <Badge variant="danger" className="absolute top-4 left-4 text-sm">
-                      -{product.discount_percentage}%
+                  {product.discount_price && product.discount_price < product.original_price && (
+                    <Badge variant="error" className="absolute top-4 left-4 text-sm">
+                      -{Math.round(((product.original_price - product.discount_price) / product.original_price) * 100)}%
                     </Badge>
                   )}
                   {!product.in_stock && (
-                    <Badge variant="secondary" className="absolute top-4 left-4">
+                    <Badge variant="default" className="absolute top-4 left-4">
                       Out of Stock
                     </Badge>
                   )}
@@ -263,7 +267,7 @@ export default function ProductDetailPage() {
                     </span>
                     {product.discount_price && (
                       <span className="text-lg text-gray-400 line-through">
-                        GHS {(product.price * quantity).toLocaleString()}
+                        GHS {(product.original_price * quantity).toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -283,47 +287,20 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Variants */}
+                {/* Variants - Simplified display for now */}
                 {product.variants && product.variants.length > 0 && (
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-3 mb-6">
                     {product.variants.map((variant) => (
-                      <div key={variant.name}>
-                        <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">
-                          {variant.name}:
-                          {selectedVariants[variant.name] && (
-                            <span className="ml-2 text-[#FF7A19]">
-                              {variant.options.find((opt) => opt.value === selectedVariants[variant.name])?.label}
-                            </span>
-                          )}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {variant.options.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() =>
-                                setSelectedVariants({
-                                  ...selectedVariants,
-                                  [variant.name]: option.value,
-                                })
-                              }
-                              disabled={!option.in_stock}
-                              className={`
-                                px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all
-                                ${!option.in_stock
-                                  ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed line-through'
-                                  : selectedVariants[variant.name] === option.value
-                                  ? 'border-[#FF7A19] bg-orange-50 text-[#FF7A19]'
-                                  : 'border-gray-200 hover:border-[#FF7A19] text-[#3A3A3A]'
-                                }
-                              `}
-                            >
-                              {option.label}
-                              {option.price_modifier > 0 && (
-                                <span className="ml-1">+GHS {option.price_modifier}</span>
-                              )}
-                            </button>
-                          ))}
+                      <div key={variant.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-semibold text-[#1A1A1A]">{variant.name}:</span>
+                          <span className="ml-2 text-sm text-[#3A3A3A]">{variant.value}</span>
                         </div>
+                        {variant.price_adjustment > 0 && (
+                          <span className="text-sm text-[#FF7A19] font-semibold">
+                            +GHS {variant.price_adjustment.toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -386,10 +363,10 @@ export default function ProductDetailPage() {
                 <div className="border-t pt-6">
                   <h3 className="text-sm font-bold text-[#1A1A1A] mb-3">Key Features</h3>
                   <ul className="space-y-2">
-                    {product.features?.slice(0, 6).map((feature, index) => (
+                    {(product.specs && typeof product.specs === 'object' ? Object.entries(product.specs).slice(0, 6) : []).map(([key, value], index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Check className="text-[#FF7A19] flex-shrink-0 mt-0.5" size={16} />
-                        <span className="text-sm text-[#3A3A3A]">{feature}</span>
+                        <span className="text-sm text-[#3A3A3A]">{key}: {String(value)}</span>
                       </li>
                     ))}
                   </ul>
@@ -454,7 +431,7 @@ export default function ProductDetailPage() {
                   }
                 `}
               >
-                Reviews ({product.reviews_count || 0})
+                Reviews ({product.review_count || 0})
               </button>
             </div>
 
@@ -462,14 +439,14 @@ export default function ProductDetailPage() {
               {activeTab === 'description' && (
                 <div className="prose max-w-none">
                   <p className="text-[#3A3A3A] leading-relaxed">{product.description}</p>
-                  {product.features && (
+                  {product.specs && typeof product.specs === 'object' && Object.keys(product.specs).length > 0 && (
                     <div className="mt-6">
-                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-4">All Features</h4>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-4">Product Specifications</h4>
                       <ul className="grid md:grid-cols-2 gap-3">
-                        {product.features.map((feature, index) => (
+                        {Object.entries(product.specs).map(([key, value], index) => (
                           <li key={index} className="flex items-start gap-2">
                             <Check className="text-[#FF7A19] flex-shrink-0 mt-0.5" size={18} />
-                            <span className="text-sm text-[#3A3A3A]">{feature}</span>
+                            <span className="text-sm text-[#3A3A3A]">{key}: {String(value)}</span>
                           </li>
                         ))}
                       </ul>
@@ -478,12 +455,12 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {activeTab === 'specs' && product.specifications && (
+              {activeTab === 'specs' && product.specs && typeof product.specs === 'object' && (
                 <div className="grid md:grid-cols-2 gap-4">
-                  {Object.entries(product.specifications).map(([key, value]) => (
+                  {Object.entries(product.specs).map(([key, value]) => (
                     <div key={key} className="flex border-b border-gray-100 pb-3">
                       <span className="font-semibold text-sm text-[#1A1A1A] w-1/3">{key}</span>
-                      <span className="text-sm text-[#3A3A3A] w-2/3">{value}</span>
+                      <span className="text-sm text-[#3A3A3A] w-2/3">{String(value)}</span>
                     </div>
                   ))}
                 </div>
@@ -539,6 +516,7 @@ export default function ProductDetailPage() {
       {quickViewProduct && (
         <QuickView
           product={quickViewProduct}
+          isOpen={!!quickViewProduct}
           onClose={() => setQuickViewProduct(null)}
         />
       )}

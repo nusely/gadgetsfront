@@ -158,7 +158,7 @@ export const NavBar = () => {
                     <div className="flex flex-col items-start">
                       <span className="text-xs font-medium text-[#3A3A3A]">Account</span>
                       <span className="text-xs text-[#FF7A19] font-semibold">
-                        {user?.name?.split(' ')[0] || 'User'}
+                        {user?.full_name?.split(' ')[0] || 'User'}
                       </span>
                     </div>
                     <ChevronDown size={14} className="text-[#3A3A3A]" />
@@ -342,7 +342,7 @@ export const NavBar = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-[#1A1A1A]">
-                        {user?.name || 'User'}
+                        {user?.full_name || 'User'}
                       </p>
                       <p className="text-xs text-[#3A3A3A]">{user?.email}</p>
                     </div>

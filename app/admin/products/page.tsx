@@ -67,7 +67,7 @@ export default function AdminProductsPage() {
         const searchLower = searchQuery.toLowerCase();
         productsData = productsData.filter(product =>
           product.name.toLowerCase().includes(searchLower) ||
-          product.sku?.toLowerCase().includes(searchLower) ||
+          (product as any).sku?.toLowerCase().includes(searchLower) ||
           product.id.toLowerCase().includes(searchLower) ||
           product.description?.toLowerCase().includes(searchLower)
         );
@@ -109,13 +109,13 @@ export default function AdminProductsPage() {
 
     const exportData = productsToExport.map(product => ({
       name: product.name,
-      sku: product.sku || 'N/A',
-      price: product.price,
+      sku: (product as any).sku || 'N/A',
+      price: product.original_price,
       discount_price: product.discount_price || null,
       stock_quantity: product.stock_quantity || 0,
-      category_name: product.category?.name || 'Uncategorized',
-      brand_name: product.brand?.name || 'No Brand',
-      is_featured: product.is_featured || false,
+      category_name: (product as any).category?.name || product.category_name || 'Uncategorized',
+      brand_name: (product as any).brand?.name || product.brand || 'No Brand',
+      is_featured: product.featured || false,
       created_at: product.created_at,
     }));
 
@@ -252,7 +252,7 @@ export default function AdminProductsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-900">{product.category?.name || 'N/A'}</span>
+                          <span className="text-sm text-gray-900">{(product as any).category?.name || product.category_name || 'N/A'}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>

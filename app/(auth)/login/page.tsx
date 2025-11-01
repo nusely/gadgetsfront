@@ -74,19 +74,29 @@ export default function LoginPage() {
         const profile = await getUserProfile(user.id);
         
         if (profile) {
-          const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+          // Handle both first_name/last_name and full_name formats
+          const profileData = profile as any;
+          const firstName = profileData.first_name || '';
+          const lastName = profileData.last_name || '';
+          const fullNameFromDb = profileData.full_name || '';
+          const fullName = fullNameFromDb || `${firstName} ${lastName}`.trim() || user.email || '';
           
           dispatch(setUser({
             id: user.id,
-            email: user.email!,
-            name: fullName || user.email!,
-            role: profile.role,
+            email: user.email || '',
+            full_name: fullName,
+            phone: profileData.phone || '',
+            avatar_url: profileData.avatar_url || undefined,
+            role: profileData.role || 'customer',
+            email_verified: user.email_confirmed_at ? true : false,
+            created_at: profileData.created_at || new Date().toISOString(),
+            updated_at: profileData.updated_at || new Date().toISOString(),
           }));
           
-          toast.success(`Welcome back, ${profile.first_name || 'User'}!`);
+          toast.success(`Welcome back, ${firstName || fullName.split(' ')[0] || 'User'}!`);
           
           // Redirect based on role
-          if (profile.role === 'admin') {
+          if (profileData.role === 'admin') {
             router.push('/admin');
           } else {
             router.push('/');

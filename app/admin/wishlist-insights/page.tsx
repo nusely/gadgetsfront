@@ -75,7 +75,7 @@ export default function WishlistInsightsPage() {
         if (!userMap.has(userId)) {
           userMap.set(userId, {
             id: userId,
-            name: `${item.user?.first_name || ''} ${item.user?.last_name || ''}`.trim() || 'Unknown User',
+            name: (item.user as any)?.full_name || `${(item.user as any)?.first_name || ''} ${(item.user as any)?.last_name || ''}`.trim() || 'Unknown User',
             email: item.user?.email || 'No email',
             items_count: 0,
             total_value: 0,

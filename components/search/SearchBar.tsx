@@ -171,7 +171,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                             {product.name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {formatCurrency(product.discount_price || product.price)}
+                            {formatCurrency(product.discount_price || product.original_price)}
                           </p>
                         </div>
                       </button>

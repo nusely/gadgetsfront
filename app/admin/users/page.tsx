@@ -83,8 +83,8 @@ export default function AdminUsersPage() {
 
   const handleExportCustomers = () => {
     const exportData = filteredUsers.map(user => ({
-      first_name: user.first_name || '',
-      last_name: user.last_name || '',
+      first_name: (user as any).first_name || '',
+      last_name: (user as any).last_name || '',
       email: user.email,
       phone: user.phone || '',
       newsletter_subscribed: user.newsletter_subscribed || false,

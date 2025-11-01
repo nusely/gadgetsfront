@@ -14,6 +14,7 @@ interface Brand {
   logo_url?: string;
   description?: string;
   is_featured: boolean;
+  show_in_mega_menu?: boolean;
   product_count: number;
   created_at: string;
 }
@@ -59,7 +60,7 @@ export default function BrandsPage() {
 
       const { error } = await supabase
         .from('brands')
-        .update({ show_in_mega_menu: !brand.show_in_mega_menu })
+        .update({ show_in_mega_menu: !(brand as any).show_in_mega_menu })
         .eq('id', brandId);
 
       if (error) throw error;

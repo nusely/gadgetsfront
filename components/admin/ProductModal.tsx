@@ -54,7 +54,7 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
         description: product.description || '',
         category_id: product.category_id || '',
         brand_id: product.brand_id || '',
-        price: product.price?.toString() || '',
+        price: product.original_price?.toString() || '',
         discount_price: product.discount_price?.toString() || '',
         discount_percentage: product.discount_percentage?.toString() || '',
         stock_quantity: product.stock_quantity?.toString() || '',

@@ -5,6 +5,7 @@ export interface Product {
   description: string;
   category_id: string;
   brand: string;
+  brand_id?: string; // Optional brand_id for database relationships
   original_price: number;
   discount_price: number | null;
   in_stock: boolean;

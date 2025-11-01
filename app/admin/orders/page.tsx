@@ -212,7 +212,7 @@ export default function AdminOrdersPage() {
       order_number: order.order_number,
       customer_name: order.user_name,
       customer_email: order.user_email,
-      total_amount: parseFloat(order.total_amount) || 0,
+      total_amount: typeof order.total_amount === 'string' ? parseFloat(order.total_amount) || 0 : (order.total_amount || 0),
       status: order.status,
       payment_status: order.payment_status,
       created_at: order.created_at,

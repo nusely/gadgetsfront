@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Coupon } from '@/types/coupon';
+import { Coupon, CreateCouponData } from '@/types/coupon';
 
 // Get all coupons (admin only)
 export const getAllCoupons = async (): Promise<Coupon[]> => {
@@ -87,7 +87,7 @@ export const generateCouponCode = async (): Promise<string> => {
 };
 
 // Create new coupon
-export const createCoupon = async (couponData: Omit<Coupon, 'id' | 'created_at' | 'updated_at' | 'used_count'>): Promise<Coupon | null> => {
+export const createCoupon = async (couponData: CreateCouponData): Promise<Coupon | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -98,6 +98,9 @@ export const createCoupon = async (couponData: Omit<Coupon, 'id' | 'created_at' 
       .from('coupons')
       .insert({
         ...couponData,
+        minimum_amount: couponData.minimum_amount ?? 0,
+        is_active: couponData.is_active ?? true,
+        valid_from: couponData.valid_from || new Date().toISOString(),
         created_by: user.id
       })
       .select()
@@ -166,7 +169,7 @@ export const incrementCouponUsage = async (couponId: string): Promise<boolean> =
     const { error } = await supabase
       .from('coupons')
       .update({
-        used_count: supabase.raw('used_count + 1'),
+        used_count: (await supabase.from('coupons').select('used_count').eq('id', couponId).single()).data?.used_count + 1 || 1,
         updated_at: new Date().toISOString()
       })
       .eq('id', couponId);

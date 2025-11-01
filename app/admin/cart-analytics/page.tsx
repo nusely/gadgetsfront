@@ -58,8 +58,9 @@ export default function CartAnalyticsPage() {
       if (ordersError) throw ordersError;
 
       const formattedCarts: AbandonedCart[] = (abandonedOrders || []).map(order => {
-        const userName = order.user 
-          ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() || 'Unknown'
+        const user = order.user as any;
+        const userName = user 
+          ? (user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown')
           : 'Guest';
         
         const items = order.order_items || [];
@@ -79,7 +80,7 @@ export default function CartAnalyticsPage() {
         return {
           id: order.id,
           customer_name: userName,
-          customer_email: order.user?.email || 'No email',
+          customer_email: (user && !Array.isArray(user) && user.email) ? user.email : 'No email',
           items_count: itemsCount,
           cart_value: parseFloat(order.total) || 0,
           abandoned_at: order.created_at,

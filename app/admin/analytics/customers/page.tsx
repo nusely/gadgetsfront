@@ -78,9 +78,9 @@ export default function CustomersAnalyticsPage() {
         const userId = order.user_id;
         if (!userId) return;
 
-        const user = order.user;
+        const user = order.user as any;
         const userName = user 
-          ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown'
+          ? (user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown')
           : 'Unknown';
         
         if (!customerSpending[userId]) {
@@ -88,7 +88,7 @@ export default function CustomersAnalyticsPage() {
             name: userName,
             orders: 0,
             spent: 0,
-            since: user?.created_at || order.created_at,
+            since: (user && !Array.isArray(user) && user.created_at) ? user.created_at : order.created_at,
           };
         }
         customerSpending[userId].orders += 1;

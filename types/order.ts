@@ -58,7 +58,7 @@ export interface DeliveryOption {
   name: string;
   description: string;
   price: number;
-  estimated_days: number;
+  estimated_days?: number;
 }
 
 export interface PaymentDetails {
@@ -84,7 +84,7 @@ export interface OrderTrackingEvent {
 
 export interface CheckoutData {
   items: CartItem[];
-  delivery_address: Address;
+  delivery_address: Partial<Address> | Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
   delivery_option: DeliveryOption;
   payment_method: PaymentMethod;
   notes?: string;

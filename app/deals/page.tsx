@@ -8,7 +8,7 @@ import { Zap, TrendingDown, Clock, ArrowRight } from 'lucide-react';
 
 export default function DealsPage() {
   // Mock data - will be replaced with real data
-  const deals = [];
+  const deals: any[] = [];
 
   return (
     <div className="min-h-screen bg-white">

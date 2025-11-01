@@ -115,7 +115,7 @@ export const FlashDeals: React.FC<FlashDealsProps> = ({ limit = 8 }) => {
                     <ProductCard product={product} />
                     <div className="absolute -top-2 -right-2 z-10">
                       <Badge variant="error" size="sm">
-                        {product.flash_deal_discount}% OFF
+                        {(product as any).flash_deal_discount || 0}% OFF
                       </Badge>
                     </div>
                   </div>

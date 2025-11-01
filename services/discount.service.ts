@@ -124,7 +124,7 @@ export const discountService = {
     try {
       const { error } = await supabase
         .from('discounts')
-        .update({ used_count: supabase.raw('used_count + 1') })
+        .update({ used_count: ((await supabase.from('discounts').select('used_count').eq('id', id).single()).data?.used_count || 0) + 1 })
         .eq('id', id);
 
       if (error) throw error;

@@ -85,7 +85,7 @@ export default function ShopPage() {
     // Apply brand filter
     if (filters.brands.length > 0) {
       filtered = filtered.filter(product => 
-        filters.brands.includes(product.brand_id)
+        product.brand_id && filters.brands.includes(product.brand_id)
       );
     }
 
@@ -112,10 +112,10 @@ export default function ShopPage() {
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case 'popular':
-        filtered.sort((a, b) => (b.rating_count || 0) - (a.rating_count || 0));
+        filtered.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
         break;
       default: // featured
-        filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
 
     setFilteredProducts(filtered.slice(0, 20));
@@ -139,7 +139,7 @@ export default function ShopPage() {
     }
     if (filters.brands.length > 0) {
       filtered = filtered.filter(product => 
-        filters.brands.includes(product.brand_id)
+        product.brand_id && filters.brands.includes(product.brand_id)
       );
     }
     filtered = filtered.filter(product => {
@@ -162,10 +162,10 @@ export default function ShopPage() {
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case 'popular':
-        filtered.sort((a, b) => (b.rating_count || 0) - (a.rating_count || 0));
+        filtered.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
         break;
       default:
-        filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
 
     setFilteredProducts(filtered.slice(0, endIndex));

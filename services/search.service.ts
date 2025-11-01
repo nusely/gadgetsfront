@@ -216,14 +216,17 @@ export const searchService = {
       }
 
       // Transform products to flatten nested objects
-      const transformedProducts = (products || []).map(product => ({
-        ...product,
-        category_name: product.category?.name || null,
-        brand_name: product.brand?.name || null,
-        // Remove nested objects
-        category: undefined,
-        brand: undefined
-      }));
+      const transformedProducts = (products || []).map(product => {
+        const p = product as any;
+        return {
+          ...product,
+          category_name: Array.isArray(p.category) ? null : p.category?.name || null,
+          brand_name: Array.isArray(p.brand) ? null : p.brand?.name || null,
+          // Remove nested objects
+          category: undefined,
+          brand: undefined
+        };
+      });
 
       // Get category suggestions
       const { data: categories } = await supabase
@@ -240,7 +243,7 @@ export const searchService = {
         .limit(3);
 
       // If we found matching categories or brands, also search for products in those categories/brands
-      let additionalProducts = [];
+      let additionalProducts: any[] = [];
       if ((categories && categories.length > 0) || (brands && brands.length > 0)) {
         const { data: categoryProducts } = await supabase
           .from('products')

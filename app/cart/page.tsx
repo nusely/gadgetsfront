@@ -35,7 +35,8 @@ export default function CartPage() {
   const deliveryFee = total > 200 ? 0 : 15;
   const couponDiscount = appliedCoupon?.discount_amount || 0;
   const totalDiscount = discountAmount + couponDiscount;
-  const finalDeliveryFee = appliedCoupon?.type === 'free_delivery' ? 0 : deliveryFee;
+  // Free delivery is already included in the discount_amount if applicable
+  const finalDeliveryFee = deliveryFee;
   const grandTotal = total + finalDeliveryFee + taxAmount - totalDiscount;
 
   const handleCouponApplied = (validation: CouponValidation) => {

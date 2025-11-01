@@ -202,7 +202,7 @@ export default function AdminDashboard() {
 
       const formattedTransactions: RecentTransaction[] = (recentOrders || []).map(order => {
         const userName = order.user 
-          ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() || 'Unknown'
+          ? ((order.user as any).full_name || `${(order.user as any).first_name || ''} ${(order.user as any).last_name || ''}`.trim() || 'Unknown')
           : 'Guest';
         
         const orderDate = new Date(order.created_at);

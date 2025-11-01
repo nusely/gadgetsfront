@@ -298,7 +298,7 @@ export function CategoryModal({ isOpen, onClose, category, onSuccess }: Category
                         parent.appendChild(errorDiv);
                       }
                     }}
-                    onLoad={() => {
+                    onLoad={(e) => {
                       // Hide any error messages when image loads successfully
                       const parent = (e.target as HTMLImageElement).parentElement;
                       const errorDiv = parent?.querySelector('.image-error');

@@ -20,7 +20,7 @@ import { Product } from '@/types/product';
 import { getCategories } from '@/services/category.service';
 import { getBrands } from '@/services/brand.service';
 import { Category } from '@/types/product';
-import { Brand } from '@/types/product';
+import { Brand } from '@/services/brand.service';
 
 interface SearchFilters {
   category?: string;
@@ -160,7 +160,7 @@ export default function SearchPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Filters:</span>
                   {filters.category && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       Category: {allCategories.find(c => c.id === filters.category)?.name}
                       <button
                         onClick={() => handleFilterChange('category', undefined)}
@@ -171,7 +171,7 @@ export default function SearchPage() {
                     </Badge>
                   )}
                   {filters.brand && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       Brand: {allBrands.find(b => b.id === filters.brand)?.name}
                       <button
                         onClick={() => handleFilterChange('brand', undefined)}
@@ -182,7 +182,7 @@ export default function SearchPage() {
                     </Badge>
                   )}
                   {filters.minPrice !== undefined && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       Min: GHS {filters.minPrice}
                       <button
                         onClick={() => handleFilterChange('minPrice', undefined)}
@@ -193,7 +193,7 @@ export default function SearchPage() {
                     </Badge>
                   )}
                   {filters.maxPrice !== undefined && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       Max: GHS {filters.maxPrice}
                       <button
                         onClick={() => handleFilterChange('maxPrice', undefined)}

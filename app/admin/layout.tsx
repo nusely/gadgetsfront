@@ -250,10 +250,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="p-4 border-b border-gray-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FF7A19] rounded-full flex items-center justify-center font-bold">
-                {user?.name?.charAt(0) || 'A'}
+                {user?.full_name?.charAt(0) || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{user?.name || 'Admin'}</p>
+                <p className="font-semibold truncate">{user?.full_name || 'Admin'}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
@@ -360,7 +360,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   : pathname.split('/').pop()?.replace('-', ' ').toUpperCase()}
               </h1>
               <p className="text-sm text-[#3A3A3A] mt-1">
-                Welcome back, {user?.name?.split(' ')[0] || 'Admin'}
+                Welcome back, {user?.full_name?.split(' ')[0] || 'Admin'}
               </p>
             </div>
             <div className="flex items-center gap-4">
