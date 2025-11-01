@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {hasDiscount && (
               <Badge variant="error" size="sm">
-                {discountPercentage}% OFF
+                -{discountPercentage}%
               </Badge>
             )}
             {product.featured && (
@@ -156,35 +156,59 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
             {product.brand}
           </p>
 
-          {/* Product Name - Reduced font size by 15% */}
-          <h3 className="text-xs font-semibold text-[#1A1A1A] mb-2 line-clamp-2 group-hover:text-[#FF7A19] transition-colors min-h-[2.5rem]">
+          {/* Product Name - Smaller on mobile, normal on desktop */}
+          <h3 className="text-[10px] sm:text-xs font-semibold text-[#1A1A1A] mb-2 line-clamp-2 group-hover:text-[#FF7A19] transition-colors min-h-[2.5rem]">
             {product.name}
           </h3>
 
 
-          {/* Price - Reduced font size by 15% */}
+          {/* Price - Smaller on mobile */}
           <div className="flex items-baseline gap-2 mb-3 mt-auto">
-            <span className="text-sm font-bold text-[#1A1A1A]">
+            <span className="text-xs sm:text-sm font-bold text-[#1A1A1A]">
               {formatCurrency(product.discount_price || product.original_price)}
             </span>
             {hasDiscount && (
-              <span className="text-xs text-[#3A3A3A] line-through">
+              <span className="text-[10px] sm:text-xs text-[#3A3A3A] line-through">
                 {formatCurrency(product.original_price)}
               </span>
             )}
           </div>
 
-          {/* Add to Cart Button - Improved height and hover effects */}
-          <Button
-            onClick={handleAddToCart}
-            disabled={!product.in_stock}
-            variant="primary"
-            size="md"
-            icon={!isInCart ? <ShoppingCart size={16} /> : undefined}
-            className="w-full text-sm whitespace-nowrap h-10 hover:scale-105 transition-transform duration-200 hover:shadow-lg"
-          >
-            {!product.in_stock ? 'Out of Stock' : isInCart ? 'Added to Cart' : 'Add to Cart'}
-          </Button>
+          {/* Add to Cart - Icon on mobile, Button on desktop */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Mobile: Cart Icon */}
+            <button
+              onClick={handleAddToCart}
+              disabled={!product.in_stock}
+              className={`md:hidden p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+                isInCart 
+                  ? 'bg-orange-50' 
+                  : 'bg-gray-100 hover:bg-gray-200'
+              }`}
+              title={!product.in_stock ? 'Out of Stock' : isInCart ? 'In Cart' : 'Add to Cart'}
+            >
+              <ShoppingCart 
+                size={20} 
+                className={isInCart ? 'text-[#FF7A19]' : 'text-white'}
+                style={{
+                  filter: isInCart ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
+                  WebkitFilter: isInCart ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))'
+                }}
+              />
+            </button>
+
+            {/* Desktop: Full Button */}
+            <Button
+              onClick={handleAddToCart}
+              disabled={!product.in_stock}
+              variant="primary"
+              size="md"
+              icon={!isInCart ? <ShoppingCart size={16} /> : undefined}
+              className="hidden md:flex w-full text-sm whitespace-nowrap h-10 hover:scale-105 transition-transform duration-200 hover:shadow-lg"
+            >
+              {!product.in_stock ? 'Out of Stock' : isInCart ? 'Added to Cart' : 'Add to Cart'}
+            </Button>
+          </div>
         </div>
       </div>
     </Link>

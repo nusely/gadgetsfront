@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { NavBar } from '@/components/navigation/NavBar';
 import { Footer } from '@/components/Footer';
+import { MobileBottomNav } from '@/components/navigation/MobileBottomNav';
 import React, { Suspense } from 'react';
 import CheckmarkLoader from '@/components/loaders/CheckmarkLoader';
 
@@ -11,15 +12,15 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const isAdminRoute = pathname.startsWith('/admin');
 
   if (isAdminRoute) {
-    // Admin routes: No NavBar, No Footer
+    // Admin routes: No NavBar, No Footer, No MobileBottomNav
     return <>{children}</>;
   }
 
-  // Regular routes: With NavBar and Footer
+  // Regular routes: With NavBar, Footer, and MobileBottomNav
   return (
     <>
       <NavBar />
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         <Suspense
           fallback={
             <div className="py-20 flex items-center justify-center">
@@ -31,6 +32,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
         </Suspense>
       </main>
       <Footer />
+      <MobileBottomNav />
     </>
   );
 }
