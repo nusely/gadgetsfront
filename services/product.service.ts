@@ -200,7 +200,7 @@ export const getProductBySlug = async (slug: string): Promise<Product | null> =>
         discount_price: product.discount_price,
       }]);
       
-      product.price_range = priceRange.get(product.id) || {
+      (product as any).price_range = priceRange.get(product.id) || {
         min: basePrice,
         max: basePrice,
         hasRange: false,
@@ -209,7 +209,7 @@ export const getProductBySlug = async (slug: string): Promise<Product | null> =>
       console.error('Error calculating price range (skipping):', error);
       // Fallback: use base price
       const basePrice = product.discount_price || product.original_price;
-      product.price_range = {
+      (product as any).price_range = {
         min: basePrice,
         max: basePrice,
         hasRange: false,

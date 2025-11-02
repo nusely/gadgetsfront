@@ -67,10 +67,14 @@ export default function Home() {
             link_text: b.button_text || b.link_text || 'Shop Now',
             display_order: b.order || b.sort_order || b.display_order || 0,
             active: b.active !== false,
+            type: b.type || 'hero',
+            position: b.order || b.sort_order || b.display_order || 0,
+            created_at: b.created_at || new Date().toISOString(),
+            updated_at: b.updated_at || new Date().toISOString(),
           }))
           .sort((a: any, b: any) => a.display_order - b.display_order);
         
-        setHeroBanners(heroBanners);
+        setHeroBanners(heroBanners as Banner[]);
       }
     } catch (error) {
       console.error('Error fetching banners:', error);
