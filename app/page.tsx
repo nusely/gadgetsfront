@@ -163,10 +163,10 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Star className="text-[#FF7A19] fill-[#FF7A19]" size={18} />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Featured Products</h2>
+                <Star className="text-[#FF7A19] fill-[#FF7A19]" size={20} />
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#1A1A1A]">Featured Products</h2>
               </div>
-              <p className="text-[#3A3A3A] text-xs sm:text-sm">Handpicked for you</p>
+              <p className="text-[#3A3A3A] text-[11px] sm:text-xs">Handpicked for you</p>
             </div>
             <Link href="/products" className="w-full sm:w-auto">
               <Button variant="outline" size="sm" icon={<ArrowRight size={14} />} className="w-full sm:w-auto">
@@ -205,10 +205,10 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="text-[#FF7A19]" size={18} />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">All Products</h2>
+                <TrendingUp className="text-[#FF7A19]" size={20} />
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#1A1A1A]">All Products</h2>
               </div>
-              <p className="text-[#3A3A3A] text-xs sm:text-sm">Explore our complete collection</p>
+              <p className="text-[#3A3A3A] text-[11px] sm:text-xs">Explore our complete collection</p>
             </div>
             <Link href="/shop" className="w-full sm:w-auto">
               <Button variant="outline" size="sm" icon={<ArrowRight size={14} />} className="w-full sm:w-auto">

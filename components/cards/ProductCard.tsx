@@ -170,19 +170,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
         {/* Content */}
         <div className="p-4 flex-1 flex flex-col">
           {/* Brand/Category */}
-          <p className="text-xs text-[#FF7A19] font-medium uppercase tracking-wide mb-1">
+          <p className="text-[10px] sm:text-xs text-[#FF7A19] font-medium uppercase tracking-wide mb-1">
             {product.brand}
           </p>
 
-          {/* Product Name - Reduced by another 20% */}
-          <h3 className="text-[5.5px] sm:text-[6px] font-semibold text-[#1A1A1A] mb-2 line-clamp-2 group-hover:text-[#FF7A19] transition-colors min-h-[2.5rem]">
+          {/* Product Name - Medium size, clear and readable (like reference image) */}
+          <h3 className="text-xs sm:text-sm font-semibold text-[#1A1A1A] mb-2 line-clamp-2 group-hover:text-[#FF7A19] transition-colors leading-tight">
             {product.name}
           </h3>
 
 
-          {/* Price - 10% bigger than before */}
+          {/* Price - Prominent, bold, larger than product titles */}
           <div className="flex items-baseline gap-2 mb-3 mt-auto">
-            <span className="text-sm sm:text-base font-bold text-[#1A1A1A]">
+            <span className="text-base sm:text-lg font-bold text-[#FF7A19]">
               {formatCurrency(product.discount_price || product.original_price)}
             </span>
             {hasDiscount && (
