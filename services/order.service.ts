@@ -30,19 +30,19 @@ export const orderService = {
     // Try to call backend API first, fallback to Supabase if it fails
     try {
       const orderPayload = {
-        user_id: userId,
+          user_id: userId,
         // order_number not provided - backend will generate sequential number
-        subtotal,
-        discount: 0,
-        tax,
-        delivery_fee: deliveryFee,
-        total,
-        payment_method: checkoutData.payment_method,
+          subtotal,
+          discount: 0,
+          tax,
+          delivery_fee: deliveryFee,
+          total,
+          payment_method: checkoutData.payment_method,
         delivery_address: checkoutData.delivery_address, // Backend will map this to shipping_address
-        delivery_option: checkoutData.delivery_option,
-        notes: checkoutData.notes || null,
-        payment_reference: checkoutData.payment_reference || null, // Include payment reference for transaction linking
-        order_items,
+          delivery_option: checkoutData.delivery_option,
+          notes: checkoutData.notes || null,
+          payment_reference: checkoutData.payment_reference || null, // Include payment reference for transaction linking
+          order_items,
       };
       
       console.log('Creating order via backend API:', {
@@ -75,8 +75,8 @@ export const orderService = {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          return result.data;
-        } else {
+        return result.data;
+      } else {
           throw new Error(result.message || 'Order creation failed');
         }
       } else {

@@ -170,7 +170,8 @@ export default function NotificationsPage() {
         .eq('id', notificationId);
 
       if (error) {
-        if (error.code === '42P01') return; // Table doesn't exist
+        const errorWithCode = error as any;
+        if (errorWithCode.code === '42P01') return; // Table doesn't exist
         throw error;
       }
 
@@ -196,7 +197,8 @@ export default function NotificationsPage() {
         .in('id', unreadIds);
 
       if (error) {
-        if (error.code === '42P01') return; // Table doesn't exist
+        const errorWithCode = error as any;
+        if (errorWithCode.code === '42P01') return; // Table doesn't exist
         throw error;
       }
 
@@ -215,7 +217,8 @@ export default function NotificationsPage() {
         .eq('id', notificationId);
 
       if (error) {
-        if (error.code === '42P01') return; // Table doesn't exist
+        const errorWithCode = error as any;
+        if (errorWithCode.code === '42P01') return; // Table doesn't exist
         throw error;
       }
 

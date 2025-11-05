@@ -430,7 +430,7 @@ export function OrderDetailModal({ isOpen, onClose, orderId, onStatusUpdate }: O
                               GHS {(item.unit_price || 0).toFixed(2)}
                             </td>
                             <td className="px-4 py-3 text-sm text-right font-semibold text-[#1A1A1A]">
-                              GHS {((item.total_price || item.subtotal || (item.unit_price || 0) * (item.quantity || 0))).toFixed(2)}
+                              GHS {((item.total_price || (item as any).subtotal || (item.unit_price || 0) * (item.quantity || 0))).toFixed(2)}
                             </td>
                           </tr>
                         ))

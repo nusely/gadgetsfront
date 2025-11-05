@@ -112,7 +112,8 @@ export default function TransactionsPage() {
       if (error) {
         console.error('Error fetching transactions:', error);
         // Check if table doesn't exist
-        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+        const errorWithCode = error as any;
+        if (errorWithCode.code === '42P01' || errorWithCode.code === 'PGRST116' || error.message?.includes('does not exist')) {
           console.error('Transactions table does not exist or RLS is blocking access');
           toast.error('Transactions table not accessible. Please check database setup.');
         }

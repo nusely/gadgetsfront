@@ -121,13 +121,15 @@ async function saveToMediaLibrary(
 
     if (error) {
       // If it's a unique constraint error, that's okay - image already exists
-      if (error.code !== '23505' && error.code !== '42P01') {
+      const errorWithCode = error as any;
+      if (errorWithCode.code !== '23505' && errorWithCode.code !== '42P01') {
         console.error('Error saving to media library:', error);
       }
     }
   } catch (error: any) {
     // If table doesn't exist, that's okay - we'll just skip saving
-    if (error.code !== '42P01' && error.message?.includes('does not exist')) {
+    const errorWithCode = error as any;
+    if (errorWithCode.code !== '42P01' && error.message?.includes('does not exist')) {
       console.log('Media library table not found, skipping save');
     } else {
       console.error('Error saving to media library:', error);

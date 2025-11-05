@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
           errorMessage.includes('policy') ||
           errorMessage.includes('RLS') ||
           errorMessage.includes('permission denied') ||
-          error.code === 'PGRST301';
+          (error as any).code === 'PGRST301';
         
         if (isRLSError) {
           toast.error('Permission denied. Please check your admin access.');

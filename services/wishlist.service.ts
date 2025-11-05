@@ -16,7 +16,8 @@ export const wishlistService = {
 
       if (error) {
         // 42P01 = relation does not exist (table not created yet)
-        if (error.code === '42P01') {
+        const errorWithCode = error as any;
+        if (errorWithCode.code === '42P01') {
           console.warn('Wishlist table does not exist yet. Please run create_wishlist_table.sql');
           return [];
         }
@@ -40,10 +41,13 @@ export const wishlistService = {
         .eq('product_id', productId)
         .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
+        const checkErrorWithCode = checkError as any;
         // PGRST116 = no rows found (not an error)
-        console.error('Error checking wishlist:', checkError);
-        throw checkError;
+        if (checkErrorWithCode.code !== 'PGRST116') {
+          console.error('Error checking wishlist:', checkError);
+          throw checkError;
+        }
       }
 
       if (existing) {
@@ -58,13 +62,14 @@ export const wishlistService = {
         });
 
       if (error) {
+        const errorWithCode = error as any;
         // 42P01 = relation does not exist (table not created yet)
-        if (error.code === '42P01') {
+        if (errorWithCode.code === '42P01') {
           console.warn('Wishlist table does not exist yet. Please run create_wishlist_table.sql');
           return false;
         }
         // 23505 = unique_violation (already exists - race condition)
-        if (error.code === '23505') {
+        if (errorWithCode.code === '23505') {
           console.warn('Product already in wishlist (race condition)');
           return false;
         }
@@ -113,12 +118,13 @@ export const wishlistService = {
         .single();
 
       if (error) {
+        const errorWithCode = error as any;
         // PGRST116 = no rows found (not an error, just not in wishlist)
-        if (error.code === 'PGRST116') {
+        if (errorWithCode.code === 'PGRST116') {
           return false;
         }
         // 42P01 = relation does not exist (table not created yet)
-        if (error.code === '42P01') {
+        if (errorWithCode.code === '42P01') {
           console.warn('Wishlist table does not exist yet. Please run create_wishlist_table.sql');
           return false;
         }

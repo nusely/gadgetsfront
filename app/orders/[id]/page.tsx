@@ -152,7 +152,7 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-gray-900">
-                        {formatCurrency(item.total_price || item.subtotal || (item.unit_price * item.quantity))}
+                        {formatCurrency((item as any).total_price || item.subtotal || (item.unit_price * item.quantity))}
                       </p>
                       <p className="text-sm text-gray-600">{formatCurrency(item.unit_price)} each</p>
                     </div>
@@ -218,19 +218,19 @@ export default function OrderDetailPage() {
                   <Package size={18} />
                   Delivery Option
                 </h3>
-                {order.delivery_option || (order.shipping_address?.delivery_option || order.delivery_address?.delivery_option) ? (
+                {order.delivery_option || (order.shipping_address as any)?.delivery_option || (order.delivery_address as any)?.delivery_option ? (
                   <>
                     <p className="text-gray-900 font-medium">
-                      {(order.delivery_option || order.shipping_address?.delivery_option || order.delivery_address?.delivery_option)?.name || 'Standard Delivery'}
+                      {(order.delivery_option || (order.shipping_address as any)?.delivery_option || (order.delivery_address as any)?.delivery_option)?.name || 'Standard Delivery'}
                     </p>
-                    {(order.delivery_option || order.shipping_address?.delivery_option || order.delivery_address?.delivery_option)?.description && (
+                    {(order.delivery_option || (order.shipping_address as any)?.delivery_option || (order.delivery_address as any)?.delivery_option)?.description && (
                       <p className="text-sm text-gray-600">
-                        {(order.delivery_option || order.shipping_address?.delivery_option || order.delivery_address?.delivery_option).description}
+                        {(order.delivery_option || (order.shipping_address as any)?.delivery_option || (order.delivery_address as any)?.delivery_option).description}
                       </p>
                     )}
-                    {(order.shipping_fee || order.delivery_fee) && (
+                    {((order as any).shipping_fee || order.delivery_fee) && (
                       <p className="text-sm text-gray-600 mt-1">
-                        Fee: {formatCurrency(order.shipping_fee || order.delivery_fee || 0)}
+                        Fee: {formatCurrency((order as any).shipping_fee || order.delivery_fee || 0)}
                       </p>
                     )}
                   </>

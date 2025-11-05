@@ -26,14 +26,14 @@ export default function PaymentCallbackPage() {
     }
 
     // Extract reference inside useEffect to avoid dependency issues
-    const reference = searchParams.get('reference');
-    
+        const reference = searchParams.get('reference');
+
     // Only run if we have a reference
-    if (!reference) {
-      setStatus('error');
-      setMessage('No payment reference found');
-      return;
-    }
+        if (!reference) {
+          setStatus('error');
+          setMessage('No payment reference found');
+          return;
+        }
 
     const handlePaymentCallback = async () => {
       try {
@@ -92,7 +92,7 @@ export default function PaymentCallbackPage() {
             setMessage('Payment verified but checkout data is missing or invalid. Please contact support.');
             return;
           }
-          
+            
           // Get user ID from metadata or checkout data
           const userId = (metadata.user_id && metadata.user_id !== 'guest') 
             ? metadata.user_id 
@@ -123,9 +123,9 @@ export default function PaymentCallbackPage() {
             paymentMethod: checkoutData.payment_method,
             paymentReference: checkoutData.payment_reference,
           });
-          
-          // Create order after successful payment verification
-          try {
+            
+            // Create order after successful payment verification
+            try {
             console.log('Calling orderService.createOrder with:', {
               userId,
               itemsCount: checkoutData.items?.length,
@@ -137,8 +137,8 @@ export default function PaymentCallbackPage() {
             
             if (!order || !order.id) {
               throw new Error('Order creation returned invalid response');
-            }
-            
+              }
+              
             console.log('Order created successfully:', {
               id: order.id,
               order_number: order.order_number,
@@ -190,7 +190,7 @@ export default function PaymentCallbackPage() {
               const errorMessage = orderError?.message || orderError?.response?.data?.message || 'Failed to create order';
               setMessage(`Payment verified but failed to create order: ${errorMessage}. Please contact support.`);
               toast.error(`Order creation failed: ${errorMessage}`);
-            }
+          }
         } else {
           setStatus('error');
           setMessage(verifyResult.message || 'Payment verification failed');

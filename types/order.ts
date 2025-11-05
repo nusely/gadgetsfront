@@ -14,8 +14,10 @@ export interface Order {
   total: number;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
-  delivery_address: Address;
-  delivery_option: DeliveryOption;
+  delivery_address: Address | any; // Can contain delivery_option nested
+  shipping_address?: Address | any; // Database column name (for backward compatibility)
+  delivery_option?: DeliveryOption;
+  shipping_fee?: number; // Database column name (alias for delivery_fee)
   tracking_number?: string;
   notes?: string;
   created_at: string;
@@ -32,6 +34,7 @@ export interface OrderItem {
   quantity: number;
   unit_price: number;
   subtotal: number;
+  total_price?: number; // Database column name (for backward compatibility)
   selected_variants: {
     [key: string]: {
       type: string;

@@ -41,7 +41,8 @@ export const SidebarAds: React.FC<SidebarAdsProps> = ({ position, page }) => {
       if (error) {
         console.error('Error fetching sidebar ads:', error);
         // If table doesn't exist, return empty array
-        if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+        const errorWithCode = error as any;
+        if (errorWithCode.code === 'PGRST116' || error.message?.includes('does not exist')) {
           setAdGroups([]);
           return;
         }

@@ -86,7 +86,8 @@ export function RegisterContent() {
 
       if (error) {
         // Handle rate limiting (429 error)
-        if (error.status === 429 || error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
+        const errorWithStatus = error as any;
+        if (errorWithStatus.status === 429 || error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
           toast.error('Too many requests. Please wait a few minutes before trying again.', {
             duration: 5000,
           });

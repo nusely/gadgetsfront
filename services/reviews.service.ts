@@ -59,7 +59,8 @@ export const getUserReview = async (productId: string): Promise<Review | null> =
 
     if (error) {
       // If error is not "not found", log it but don't throw
-      if (error.code !== 'PGRST116' && error.code !== '42P01') {
+      const errorWithCode = error as any;
+      if (errorWithCode.code !== 'PGRST116' && errorWithCode.code !== '42P01') {
         console.error('Error fetching user review:', error);
       }
       return null;

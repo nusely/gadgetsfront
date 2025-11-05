@@ -213,10 +213,10 @@ export default function CheckoutPage() {
 
       // Only Cash on Delivery is enabled - create order directly
       // Emails and notifications are handled by backend
-      const order = await orderService.createOrder(checkoutData, userId);
-      dispatch(clearCart());
-      toast.success('Order placed successfully! You will receive a confirmation email shortly.');
-      router.push(`/orders/${order.id}`);
+        const order = await orderService.createOrder(checkoutData, userId);
+        dispatch(clearCart());
+        toast.success('Order placed successfully! You will receive a confirmation email shortly.');
+        router.push(`/orders/${order.id}`);
     } catch (error: any) {
       console.error('Order error:', {
         error,
