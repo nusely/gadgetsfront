@@ -497,6 +497,7 @@ export default function AdminOrdersPage() {
       pending: 'warning' as const,
       paid: 'success' as const,
       failed: 'error' as const,
+      refunded: 'info' as const,
     };
 
     return <Badge variant={statusConfig[status]}>{status.toUpperCase()}</Badge>;

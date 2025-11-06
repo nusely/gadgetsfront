@@ -85,6 +85,7 @@ export default function OrdersPage() {
       pending: { variant: 'warning' as const, label: 'PENDING' },
       paid: { variant: 'success' as const, label: 'PAID' },
       failed: { variant: 'error' as const, label: 'FAILED' },
+      refunded: { variant: 'info' as const, label: 'REFUNDED' },
     };
     const { variant, label } = config[status] || config.pending;
     return <Badge variant={variant}>{label}</Badge>;
