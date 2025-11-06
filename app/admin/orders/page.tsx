@@ -31,7 +31,7 @@ interface Order {
   user_email: string;
   total_amount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  payment_status: 'pending' | 'paid' | 'failed';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   created_at: string;
   items_count: number;
   notes?: string | null;

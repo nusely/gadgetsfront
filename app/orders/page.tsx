@@ -15,7 +15,7 @@ interface Order {
   id: string;
   order_number: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  payment_status: 'pending' | 'paid' | 'failed';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   total: number;
   created_at: string;
   items?: any[];
