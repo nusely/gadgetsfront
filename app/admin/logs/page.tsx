@@ -27,7 +27,10 @@ export default function AdminLogsPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    if (!user || (user.role !== 'superadmin')) {
+    const isWhitelisted =
+      user?.email?.toLowerCase() === 'cimons@ventechgadgets.com';
+
+    if (!user || (user.role !== 'superadmin' && !isWhitelisted)) {
       router.push('/admin');
       return;
     }
@@ -50,7 +53,10 @@ export default function AdminLogsPage() {
     fetchLogs();
   }, [isAuthenticated, user, page, router]);
 
-  if (!user || user.role !== 'superadmin') {
+  const isWhitelisted =
+    user?.email?.toLowerCase() === 'cimons@ventechgadgets.com';
+
+  if (!user || (user.role !== 'superadmin' && !isWhitelisted)) {
     return null;
   }
 

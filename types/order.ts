@@ -25,6 +25,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   delivered_at?: string;
+  tax_breakdown?: AppliedTax[];
 }
 
 export interface OrderItem {
@@ -46,6 +47,15 @@ export interface OrderItem {
     };
   };
   standalone_source_id?: string | null;
+}
+
+export interface AppliedTax {
+  id: string;
+  name: string;
+  type: 'percentage' | 'fixed';
+  applies_to: 'all' | 'products' | 'shipping' | 'total';
+  rate: number;
+  amount: number;
 }
 
 export type OrderStatus =
@@ -101,6 +111,7 @@ export interface CheckoutData {
   adjusted_delivery_fee?: number;
   tax_amount?: number;
   tax_rate?: number;
+  tax_breakdown?: AppliedTax[];
 }
 
 

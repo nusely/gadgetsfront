@@ -22,7 +22,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const dispatch = useAppDispatch();
   const { items } = useAppSelector((state) => state.cart);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const { isInWishlist, toggleItem } = useWishlist();
+  const { isInWishlist, toggleItem, removeItem } = useWishlist();
   const [showLoginModal, setShowLoginModal] = useState(false);
   
   const isInCart = items.some(item => item.id === product.id);
@@ -50,9 +50,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
     ? calculateDiscountPercentage(product.original_price, product.discount_price!)
     : 0;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const rawBaseProductId = (product as any).base_product_id;
+    if (rawBaseProductId === null) {
+      toast.error('This promo item is not available for online checkout yet. Please contact support to order.');
+      return;
+    }
+
+    const baseProductId =
+      typeof rawBaseProductId === 'string' && rawBaseProductId.trim().length > 0
+        ? rawBaseProductId
+        : product.id;
 
     // Use deal price if available, otherwise use regular discount/original price
     const itemPrice = dealPrice || calculatedDealPrice || product.discount_price || product.original_price || 0;
@@ -61,6 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
       ...product,
       quantity: 1,
       selected_variants: {},
+      base_product_id: baseProductId,
       // Override discount_price with deal price so cart uses the discounted price
       discount_price: hasDeal ? itemPrice : product.discount_price,
       original_price: product.original_price,
@@ -73,6 +85,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
         quantity: 1,
       })
     );
+
+    if (isWishlisted) {
+      const removed = await removeItem(product.id);
+      if (!removed) {
+        console.warn('Failed to remove item from wishlist after adding to cart');
+      }
+    }
 
     toast.success(`${product.name} added to cart!`);
   };
@@ -121,7 +140,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {(hasDeal || hasDiscount) && discountPercentage > 0 && (
+            {hasDiscount && discountPercentage > 0 && (
               <Badge variant="error" size="sm">
                 -{Math.round(discountPercentage)}%
               </Badge>

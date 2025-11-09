@@ -149,7 +149,7 @@ export default function WishlistPage() {
                 {/* Remove from Wishlist Button - positioned over the card */}
                 <button
                   onClick={() => handleRemoveFromWishlist(item.product_id)}
-                  className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  className="absolute top-3 left-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                   title="Remove from wishlist"
                 >
                   <Trash2 size={16} className="text-red-600" />

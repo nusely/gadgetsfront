@@ -25,6 +25,28 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formattedVariants, setFormattedVariants] = useState<{ [key: number]: any[] }>({});
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const transformOrder = (data: any): Order => {
+    const deliveryOption =
+      data.delivery_option ||
+      data.shipping_address?.delivery_option ||
+      data.delivery_address?.delivery_option || {
+        id: 'standard',
+        name: 'Standard Delivery',
+        description: 'Standard delivery option',
+        price: data.shipping_fee || data.delivery_fee || 0,
+      };
+
+    return {
+      ...data,
+      items: data.items || data.order_items || [],
+      delivery_address: data.shipping_address || data.delivery_address,
+      delivery_option: deliveryOption,
+      delivery_fee: data.shipping_fee || data.delivery_fee || 0,
+      tax: data.tax ?? data.tax_amount ?? 0,
+    };
+  };
 
   useEffect(() => {
     // Check for payment success callback
@@ -56,30 +78,38 @@ export default function OrderDetailPage() {
     try {
       setIsLoading(true);
       const data = await orderService.getOrderById(orderId);
-      
-      // Transform order data to match Order interface
-      const formattedOrder: Order = {
-        ...data,
-        items: data.items || data.order_items || [],
-        delivery_address: data.shipping_address || data.delivery_address,
-        delivery_option: data.delivery_option || 
-          data.shipping_address?.delivery_option || 
-          data.delivery_address?.delivery_option || 
-          {
-            id: 'standard',
-            name: 'Standard Delivery',
-            description: 'Standard delivery option',
-            price: data.shipping_fee || data.delivery_fee || 0,
-          },
-        delivery_fee: data.shipping_fee || data.delivery_fee || 0,
-      };
-      
+      const formattedOrder = transformOrder(data);
       setOrder(formattedOrder);
     } catch (error: any) {
       console.error('Error fetching order:', error);
       toast.error('Failed to load order details');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!order) return;
+
+    const confirmCancel = window.confirm(
+      'Are you sure you want to cancel this order? This action cannot be undone.'
+    );
+
+    if (!confirmCancel) {
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      const updatedOrder = await orderService.cancelOrder(order.id, 'Cancelled by customer');
+      const formattedOrder = transformOrder(updatedOrder);
+      setOrder(formattedOrder);
+      toast.success('Order cancelled successfully.');
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      toast.error(error?.message || 'Failed to cancel order');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -336,7 +366,13 @@ export default function OrderDetailPage() {
               {/* Action Buttons */}
               <div className="space-y-3">
                 {order.status === 'pending' && (
-                  <Button variant="danger" size="md" className="w-full">
+                  <Button
+                    variant="danger"
+                    size="md"
+                    className="w-full"
+                    onClick={handleCancelOrder}
+                    isLoading={isCancelling}
+                  >
                     Cancel Order
                   </Button>
                 )}

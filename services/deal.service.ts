@@ -443,7 +443,10 @@ export const getFlashDealProducts = async (limit: number = 4): Promise<DealProdu
     console.log('Flash deal products from Supabase:', dealProducts);
     return dealProducts || [];
   } catch (error) {
-    console.error('Error fetching flash deal products:', error);
+    console.error(
+      'Error fetching flash deal products. This often means the backend API is unreachable or NEXT_PUBLIC_API_URL is misconfigured:',
+      error
+    );
     return [];
   }
 };

@@ -1,46 +1,55 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+const PUBLIC_PATHS_DURING_MAINTENANCE = [
+  '/maintenance',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/auth/callback',
+  '/verify-email',
+  '/reset-password',
+  '/about',
+  '/contact',
+  '/privacy-policy',
+  '/terms',
+  '/laptop-banking',
+  '/blog',
+];
 
-  // Skip middleware for admin routes, API routes, login, register, and static files
-  if (
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/api') ||
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isApiRoute = pathname.startsWith('/api');
+  const isStaticAsset =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/static') ||
-    pathname.includes('.') ||
-    pathname === '/maintenance' ||
-    pathname === '/login' ||
-    pathname === '/register' ||
-    pathname === '/forgot-password'
-  ) {
+    pathname.includes('.');
+
+  if (isAdminRoute || isApiRoute || isStaticAsset) {
     return NextResponse.next();
   }
 
-  // Check maintenance mode from API route (to avoid Supabase client issues in middleware)
-  // Only check for non-admin, non-auth pages
   try {
-    const baseUrl = request.nextUrl.origin;
-    const response = await fetch(`${baseUrl}/api/check-maintenance`, {
+    const response = await fetch(new URL('/api/check-maintenance', request.url), {
       cache: 'no-store',
       headers: {
-        'Cookie': request.headers.get('cookie') || '',
+        Cookie: request.headers.get('cookie') || '',
       },
     });
 
     if (response.ok) {
       const data = await response.json();
-      if (data.maintenanceMode === true && pathname !== '/maintenance') {
-        // Redirect to maintenance page
-        const url = request.nextUrl.clone();
-        url.pathname = '/maintenance';
-        return NextResponse.rewrite(url);
+      if (data.maintenanceMode === true) {
+        const isPublicPath = PUBLIC_PATHS_DURING_MAINTENANCE.some((path) => pathname.startsWith(path));
+        if (!isPublicPath) {
+          const redirectUrl = new URL('/maintenance', request.url);
+          return NextResponse.redirect(redirectUrl);
+        }
       }
     }
   } catch (error) {
-    // If error checking maintenance mode, continue normally (don't log in production)
     if (process.env.NODE_ENV === 'development') {
       console.error('Error checking maintenance mode:', error);
     }

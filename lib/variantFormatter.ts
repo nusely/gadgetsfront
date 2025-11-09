@@ -111,8 +111,3 @@ export async function formatOrderVariants(selectedVariants: any): Promise<Format
 /**
  * Formats variants as a simple string for display
  */
-export async function formatOrderVariantsAsString(selectedVariants: any): Promise<string> {
-  const formatted = await formatOrderVariants(selectedVariants);
-  return formatted.map(v => `${v.attribute_name}: ${v.option_label}`).join(', ');
-}
-

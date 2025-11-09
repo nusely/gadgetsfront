@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,11 +13,12 @@ import { formatCurrency } from '@/lib/helpers';
 import { orderService } from '@/services/order.service';
 import { deliveryOptionsService } from '@/services/deliveryOptions.service';
 // import { paymentService } from '@/services/payment.service'; // Disabled - only Cash on Delivery
-import { DeliveryOption } from '@/types/order';
+import { DeliveryOption, AppliedTax } from '@/types/order';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { discountService } from '@/services/discount.service';
 import { settingsService } from '@/lib/settings.service';
+import { taxService, Tax as TaxRule } from '@/services/tax.service';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const [discountMessage, setDiscountMessage] = useState<string | null>(null);
   const [taxRate, setTaxRate] = useState(0);
+  const [taxRules, setTaxRules] = useState<TaxRule[]>([]);
 
   // Delivery Information - Auto-fill from user if logged in
   const [deliveryInfo, setDeliveryInfo] = useState({
@@ -121,6 +123,19 @@ export default function CheckoutPage() {
     };
 
     fetchTaxRate();
+  }, []);
+
+  useEffect(() => {
+    const loadActiveTaxes = async () => {
+      try {
+        const activeTaxes = await taxService.getActiveTaxes();
+        setTaxRules(activeTaxes);
+      } catch (error) {
+        console.error('Error fetching active taxes:', error);
+      }
+    };
+
+    loadActiveTaxes();
   }, []);
 
   // Delivery Options
@@ -314,15 +329,38 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
 
+    const sanitizeAddress = () => {
+      const trimmedFullName = deliveryInfo.full_name?.trim() || '';
+      const trimmedEmail = (deliveryInfo.email || user?.email || '').trim();
+      const trimmedPhone = deliveryInfo.phone?.trim() || '';
+      const trimmedStreet = deliveryInfo.street_address?.trim() || '';
+      const trimmedCity = deliveryInfo.city?.trim() || '';
+      const trimmedRegion = deliveryInfo.region?.trim() || '';
+      const trimmedPostal = deliveryInfo.postal_code?.trim();
+
+      const sanitized: Record<string, string> = {
+        full_name: trimmedFullName,
+        phone: trimmedPhone,
+        street_address: trimmedStreet,
+        city: trimmedCity,
+        region: trimmedRegion,
+      };
+
+      if (trimmedEmail) {
+        sanitized.email = trimmedEmail;
+      }
+
+      if (trimmedPostal) {
+        sanitized.postal_code = trimmedPostal;
+      }
+
+      return sanitized;
+    };
+
     try {
       const checkoutData = {
         items,
-        delivery_address: {
-          ...deliveryInfo,
-          email: deliveryInfo.email || user?.email, // Include email for guest orders
-          country: 'Ghana',
-          is_default: false,
-        },
+        delivery_address: sanitizeAddress(),
         delivery_option: finalDeliveryOption,
         payment_method: paymentMethod,
         notes,
@@ -330,7 +368,8 @@ export default function CheckoutPage() {
         discount_amount: discountState?.amount,
         adjusted_delivery_fee: finalDeliveryOption.price,
         tax_amount: tax,
-        tax_rate: taxRate,
+        tax_rate: effectiveTaxRate,
+        tax_breakdown: appliedTaxBreakdown,
       };
 
       // Only Cash on Delivery is enabled - create order directly
@@ -377,9 +416,112 @@ export default function CheckoutPage() {
 
   // Calculate delivery/pickup fee (no free delivery - all options have a price)
   const discountAmount = discountState?.amount ?? 0;
-  const deliveryFee = discountState ? discountState.adjustedDeliveryFee : selectedDelivery?.price ?? 0;
+  const deliveryFee = Math.max(
+    discountState ? discountState.adjustedDeliveryFee : selectedDelivery?.price ?? 0,
+    0
+  );
   const taxableAmount = Math.max(subtotal - discountAmount, 0);
-  const tax = parseFloat(((taxableAmount * taxRate) / 100).toFixed(2));
+
+  const taxComputation = useMemo(() => {
+    const breakdown: AppliedTax[] = [];
+    const productBase = Math.max(taxableAmount, 0);
+    const shippingBase = Math.max(deliveryFee, 0);
+    const combinedBase = productBase + shippingBase;
+
+    if (taxRules.length > 0) {
+      let totalTax = 0;
+
+      taxRules.forEach((rule) => {
+        const base =
+          rule.applies_to === 'products'
+            ? productBase
+            : rule.applies_to === 'shipping'
+            ? shippingBase
+            : combinedBase;
+
+        let amount = 0;
+        if (rule.type === 'percentage') {
+          if (base <= 0) {
+            amount = 0;
+          } else {
+            const normalizedRate = rule.rate > 1 ? rule.rate / 100 : rule.rate;
+            amount = Number((base * normalizedRate).toFixed(2));
+          }
+        } else {
+          amount = Number(Number(rule.rate).toFixed(2));
+        }
+
+        totalTax += amount;
+        breakdown.push({
+          id: rule.id,
+          name: rule.name,
+          type: rule.type,
+          applies_to: rule.applies_to,
+          rate: rule.rate,
+          amount,
+        });
+      });
+
+      const roundedTotal = Number(totalTax.toFixed(2));
+      const effectiveRate =
+        productBase > 0 ? Number(((roundedTotal / productBase) * 100).toFixed(2)) : 0;
+
+      return {
+        total: roundedTotal,
+        breakdown,
+        effectiveRate,
+      };
+    }
+
+    const effectiveRate = Math.max(taxRate, 0);
+    const amount =
+      effectiveRate > 0
+        ? Number(((productBase * effectiveRate) / 100).toFixed(2))
+        : 0;
+
+    if (amount > 0) {
+      breakdown.push({
+        id: 'global-tax',
+        name: 'Global Tax',
+        type: 'percentage',
+        applies_to: 'products',
+        rate: effectiveRate,
+        amount,
+      });
+    }
+
+    return {
+      total: amount,
+      breakdown,
+      effectiveRate,
+    };
+  }, [taxRules, taxableAmount, deliveryFee, taxRate]);
+
+  const tax = taxComputation.total;
+  const appliedTaxBreakdown = taxComputation.breakdown;
+  const effectiveTaxRate = taxComputation.effectiveRate;
+  const taxLabel = useMemo(() => {
+    if (appliedTaxBreakdown.length > 0) {
+      return appliedTaxBreakdown
+        .map((entry) => {
+          if (entry.type === 'percentage') {
+            const rawRate = entry.rate > 1 ? entry.rate : entry.rate * 100;
+            const formattedRate = Number(rawRate.toFixed(2)).toString().replace(/\.0+$/, '');
+            return `${entry.name || 'Tax'} - ${formattedRate}%`;
+          }
+          const formattedAmount = Number(entry.rate || 0).toFixed(2);
+          return `${entry.name || 'Tax'} - GHS ${formattedAmount}`;
+        })
+        .join(', ');
+    }
+
+    if (effectiveTaxRate > 0) {
+      const formattedRate = Number(effectiveTaxRate.toFixed(2)).toString().replace(/\.0+$/, '');
+      return `Global Tax - ${formattedRate}%`;
+    }
+
+    return null;
+  }, [appliedTaxBreakdown, effectiveTaxRate]);
   const grandTotal = Math.max(taxableAmount + deliveryFee + tax, 0);
 
   // Handle empty cart on client-side only to avoid hydration mismatch
@@ -807,7 +949,9 @@ export default function CheckoutPage() {
                 )}
                 {tax > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax</span>
+                    <span>
+                      Tax{taxLabel ? ` (${taxLabel})` : ''}
+                    </span>
                     <span>{formatCurrency(tax)}</span>
                   </div>
                 )}

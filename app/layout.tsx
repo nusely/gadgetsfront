@@ -5,6 +5,7 @@ import { ReduxProvider } from "@/store/Provider";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 import { Toaster } from "react-hot-toast";
 import { seoConfig } from "@/lib/seo.config";
+import { DataSync } from "@/components/DataSync";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -74,6 +75,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased bg-gray-50`} suppressHydrationWarning>
         <ReduxProvider>
+          <DataSync />
           <div className="min-h-screen flex flex-col">
             <LayoutWrapper>{children}</LayoutWrapper>
           </div>

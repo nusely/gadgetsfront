@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -34,6 +34,8 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   // Fetch real data from Supabase
   useEffect(() => {
@@ -201,17 +203,37 @@ export default function TransactionsPage() {
     }
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    const matchesSearch =
-      transaction.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.customer_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.order_number.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredTransactions = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return transactions.filter((transaction) => {
+      const matchesSearch =
+        transaction.customer_name.toLowerCase().includes(query) ||
+        transaction.customer_email.toLowerCase().includes(query) ||
+        transaction.order_number.toLowerCase().includes(query);
 
-    const matchesStatus =
-      statusFilter === 'all' || transaction.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' || transaction.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+  }, [transactions, searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / pageSize));
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTransactions.slice(start, start + pageSize);
+  }, [filteredTransactions, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, transactions.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const totalAmount = filteredTransactions.reduce(
     (sum, t) => sum + (t.status === 'completed' ? t.amount : 0),
@@ -230,7 +252,8 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -321,9 +344,6 @@ export default function TransactionsPage() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#1A1A1A] uppercase">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#1A1A1A] uppercase">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -334,7 +354,7 @@ export default function TransactionsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((transaction) => (
+                paginatedTransactions.map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <span className="font-mono text-sm font-semibold text-[#1A1A1A]">
@@ -376,17 +396,6 @@ export default function TransactionsPage() {
                         {new Date(transaction.created_at).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      {transaction.order_id ? (
-                        <Link href={`/admin/orders/${transaction.order_id}`}>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View order details">
-                            <Eye size={18} className="text-[#3A3A3A]" />
-                          </button>
-                        </Link>
-                      ) : (
-                        <span className="text-gray-400 text-sm">No order</span>
-                      )}
-                    </td>
                   </tr>
                 ))
               )}
@@ -395,6 +404,41 @@ export default function TransactionsPage() {
         </div>
       </div>
     </div>
+
+      {filteredTransactions.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-4 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="text-sm text-[#3A3A3A]">
+            Showing{' '}
+            <span className="font-semibold">
+              {(currentPage - 1) * pageSize + 1}-
+              {Math.min(currentPage * pageSize, filteredTransactions.length)}
+            </span>{' '}
+            of <span className="font-semibold">{filteredTransactions.length}</span> transactions
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <div className="text-sm font-medium text-[#1A1A1A]">
+              Page {currentPage} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

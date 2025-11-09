@@ -11,7 +11,7 @@ interface BrandModalProps {
   isOpen: boolean;
   onClose: () => void;
   brand?: any;
-  onSuccess: () => void;
+  onSuccess: (brand?: any) => void;
 }
 
 export function BrandModal({ isOpen, onClose, brand, onSuccess }: BrandModalProps) {
@@ -103,9 +103,11 @@ export function BrandModal({ isOpen, onClose, brand, onSuccess }: BrandModalProp
 
     setLoading(true);
     try {
+      let resultBrand: any = brand || null;
+
       if (brand) {
         // Update existing brand
-        const { error } = await supabase
+        const { data: updatedBrand, error } = await supabase
           .from('brands')
           .update({
             name: formData.name,
@@ -120,22 +122,33 @@ export function BrandModal({ isOpen, onClose, brand, onSuccess }: BrandModalProp
 
         if (error) throw error;
         toast.success('Brand updated successfully');
+        resultBrand = updatedBrand?.[0] || { ...brand, ...formData };
       } else {
         // Create new brand
-        const { error } = await supabase.from('brands').insert({
-          name: formData.name,
-          slug: formData.slug,
-          description: formData.description,
-          website: formData.website,
-          logo_url: formData.logo_url,
-          show_in_mega_menu: formData.show_in_mega_menu,
-        });
+        const { data: insertedBrands, error } = await supabase
+          .from('brands')
+          .insert({
+            name: formData.name,
+            slug: formData.slug,
+            description: formData.description,
+            website: formData.website,
+            logo_url: formData.logo_url,
+            show_in_mega_menu: formData.show_in_mega_menu,
+          })
+          .select()
+          .limit(1);
 
         if (error) throw error;
         toast.success('Brand created successfully');
+        resultBrand = insertedBrands && insertedBrands.length > 0
+          ? insertedBrands[0]
+          : { ...formData };
+        onSuccess(resultBrand);
+        onClose();
+        return;
       }
 
-      onSuccess();
+      onSuccess(resultBrand || undefined);
       onClose();
     } catch (error: any) {
       console.error('Error saving brand:', error);

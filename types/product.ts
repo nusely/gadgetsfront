@@ -21,6 +21,7 @@ export interface Product {
   variants: ProductVariant[];
   created_at: string;
   updated_at: string;
+  base_product_id?: string | null;
   // Flattened properties for search results
   category_name?: string | null;
   category_slug?: string | null;

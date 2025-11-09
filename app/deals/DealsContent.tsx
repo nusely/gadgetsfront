@@ -58,22 +58,31 @@ export function DealsContent() {
       // Handle existing products (with product_id)
       if (dp.product) {
         const product = dp.product;
+        const rawQuantity = Number(product.stock_quantity ?? 0);
+        const stockQuantity = Number.isFinite(rawQuantity) ? rawQuantity : 0;
+        const inStock = stockQuantity > 0;
+        const normalizedProduct = {
+          ...product,
+          stock_quantity: stockQuantity,
+          in_stock: inStock,
+        };
         // Calculate deal price
-        let dealPrice = product.original_price || product.discount_price || 0;
+        let dealPrice = normalizedProduct.original_price || normalizedProduct.discount_price || 0;
         if (dp.deal_price) {
           dealPrice = dp.deal_price;
-        } else if (dp.discount_percentage > 0 && product.original_price) {
-          dealPrice = product.original_price * (1 - dp.discount_percentage / 100);
-        } else if (deal.discount_percentage > 0 && product.original_price) {
-          dealPrice = product.original_price * (1 - deal.discount_percentage / 100);
+        } else if (dp.discount_percentage > 0 && normalizedProduct.original_price) {
+          dealPrice = normalizedProduct.original_price * (1 - dp.discount_percentage / 100);
+        } else if (deal.discount_percentage > 0 && normalizedProduct.original_price) {
+          dealPrice = normalizedProduct.original_price * (1 - deal.discount_percentage / 100);
         }
         
         const dealDiscount = dp.discount_percentage || deal.discount_percentage || 0;
 
         acc.push({
-          ...product,
+          ...normalizedProduct,
           deal_price: dealPrice,
           deal_discount: dealDiscount,
+          base_product_id: product.id,
         });
       } 
       // Handle standalone products (without product_id)
@@ -142,6 +151,7 @@ export function DealsContent() {
 
         const timestamps = dp.created_at || new Date().toISOString();
 
+        const linkedProductId = dp.product_id || null;
         const standaloneProduct: Product = {
           id: dp.id, // Use deal_product id as product id
           name: dp.product_name,
@@ -154,7 +164,7 @@ export function DealsContent() {
           brand_id: undefined,
           original_price: dp.original_price || dealPrice,
           discount_price: null,
-          in_stock: true,
+          in_stock: Boolean(linkedProductId),
           stock_quantity: 0,
           images,
           thumbnail: images[0] || '/placeholders/placeholder-product.webp',
@@ -169,6 +179,7 @@ export function DealsContent() {
           category_slug: null,
           brand_name: 'VENTECH Deals',
           brand_slug: null,
+          base_product_id: linkedProductId,
           price_range: {
             min: dealPrice || 0,
             max: dp.original_price || dealPrice || 0,

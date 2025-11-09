@@ -27,7 +27,7 @@ export const orderService = {
     const deliveryFee = Math.max(baseDeliveryFee, 0);
     const discountAmount = Math.max(checkoutData.discount_amount || 0, 0);
     const tax = Math.max(checkoutData.tax_amount ?? 0, 0);
-    const total = subtotal - discountAmount + deliveryFee + tax;
+    const total = Number((subtotal - discountAmount + deliveryFee + tax).toFixed(2));
     
     // Log warning if delivery_option is missing
     if (!checkoutData.delivery_option) {
@@ -70,6 +70,9 @@ export const orderService = {
       payment_reference: checkoutData.payment_reference || null,
       order_items,
       tax_rate: checkoutData.tax_rate ?? null,
+      tax_breakdown: checkoutData.tax_breakdown && checkoutData.tax_breakdown.length > 0
+        ? checkoutData.tax_breakdown
+        : undefined,
     };
 
     console.log('Creating order via backend API:', {
@@ -227,18 +230,34 @@ export const orderService = {
     };
   },
 
-  // Cancel order
-  async cancelOrder(orderId: string) {
-    const { data, error } = await supabase
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('id', orderId)
-      .select()
-      .single();
+  // Cancel order (customer or admin)
+  async cancelOrder(orderId: string, reason?: string) {
+    const authToken = await getAuthToken();
+    if (!authToken) {
+      throw new Error('You must be logged in to cancel an order.');
+    }
 
-    if (error) throw error;
+    const endpoint = buildApiUrl(`/api/orders/${orderId}/cancel`);
+    const response = await fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        cancellation_reason: reason || 'Cancelled by customer',
+      }),
+    });
 
-    return data;
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      const message =
+        result?.message || result?.error || `Failed to cancel order (${response.status})`;
+      throw new Error(message);
+    }
+
+    return result.data as Order;
   },
 };
 

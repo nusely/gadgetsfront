@@ -57,7 +57,8 @@ export default function CartAnalyticsPage() {
 
       if (ordersError) throw ordersError;
 
-      const formattedCarts: AbandonedCart[] = (abandonedOrders || []).map(order => {
+      const formattedCarts: AbandonedCart[] = (abandonedOrders || [])
+        .map(order => {
         const user = order.user as any;
         const userName = user 
           ? (user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown')
@@ -88,7 +89,8 @@ export default function CartAnalyticsPage() {
           products,
           recovery_sent: false, // This would need to be tracked in the database
         };
-      });
+        })
+        .filter((cart) => cart.items_count > 0);
 
       setCarts(formattedCarts);
     } catch (error) {

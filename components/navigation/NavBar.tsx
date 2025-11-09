@@ -57,6 +57,7 @@ export const NavBar = () => {
     { href: '/', label: 'Home' },
     { href: '/shop', label: 'Shop' },
     { href: '/deals', label: 'Deals' },
+    { href: '/track-order', label: 'Track Order' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
     { href: '/laptop-banking', label: '💰 Laptop Banking', highlight: true },
@@ -86,7 +87,7 @@ export const NavBar = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0">
             <Image
-              src="/logo/ventech_logo_1.png"
+              src="https://files.ventechgadgets.com/ventech_logo_1.webp"
               alt="VENTECH"
               width={120}
               height={50}
@@ -179,10 +180,10 @@ export const NavBar = () => {
                       <span>Wishlist</span>
                     </Link>
                     {user && (user.role === 'admin' || user.role === 'superadmin') && (
-                      <Link href="/admin" className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[#FF7A19] text-sm">
-                        <Settings size={16} />
-                        <span>Admin Panel</span>
-                      </Link>
+                    <Link href="/admin" className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[#FF7A19] text-sm">
+                      <Settings size={16} />
+                      <span>Admin Panel</span>
+                    </Link>
                     )}
                     <button 
                       onClick={handleLogout}
@@ -367,14 +368,14 @@ export const NavBar = () => {
                   My Orders
                 </Link>
                 {user && (user.role === 'admin' || user.role === 'superadmin') && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-[#FF7A19] hover:bg-orange-50 transition-colors font-medium"
-                  >
-                    <Settings size={16} className="inline mr-2" />
-                    Admin Panel
-                  </Link>
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-[#FF7A19] hover:bg-orange-50 transition-colors font-medium"
+                    >
+                      <Settings size={16} className="inline mr-2" />
+                      Admin Panel
+                    </Link>
                 )}
               </div>
 

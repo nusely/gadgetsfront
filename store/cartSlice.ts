@@ -108,6 +108,12 @@ const cartSlice = createSlice({
     loadCartFromStorage: (state, action: PayloadAction<CartState>) => {
       return action.payload;
     },
+    setCartItems: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+      const totals = calculateCartTotals(state.items);
+      state.itemCount = totals.itemCount;
+      state.total = totals.total;
+    },
   },
 });
 
@@ -117,6 +123,7 @@ export const {
   updateQuantity,
   clearCart,
   loadCartFromStorage,
+  setCartItems,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

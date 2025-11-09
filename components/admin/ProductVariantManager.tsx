@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/helpers';
+import { buildApiUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { AddOptionToAttribute } from './AddOptionToAttribute';
 
@@ -53,6 +54,21 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
   const [showAddAttribute, setShowAddAttribute] = useState(false);
   // Track which option's price is being edited: { attributeId: { optionId: price } }
   const [editingPrices, setEditingPrices] = useState<{ [key: string]: { [key: string]: string } }>({});
+
+  const getAuthHeaders = async (): Promise<HeadersInit> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error('Authentication required');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    };
+  };
 
   useEffect(() => {
     fetchAttributes();
@@ -290,19 +306,28 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
     }
 
     try {
-      const { error } = await supabase
-        .from('product_attribute_options')
-        .update({ price_modifier: priceModifier })
-        .eq('id', optionId);
+      const headers = await getAuthHeaders();
+      const response = await fetch(
+        buildApiUrl(`/api/products/variants/options/${optionId}`),
+        {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ price_modifier: priceModifier }),
+        }
+      );
 
-      if (error) throw error;
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || `Failed to update price (status ${response.status})`);
+      }
 
       toast.success('Price updated successfully');
       cancelEditingPrice(attributeId, optionId);
       await fetchAttributes(); // Refresh to show updated price
     } catch (error: any) {
       console.error('Error updating option price:', error);
-      toast.error(error.message || 'Failed to update price');
+      toast.error(error?.message || 'Failed to update price');
     }
   };
 
@@ -312,22 +337,18 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
     }
 
     try {
-      // First, remove from product mappings if this product is using it
-      if (productId) {
-        await supabase
-          .from('product_attribute_option_mappings')
-          .delete()
-          .eq('product_id', productId)
-          .eq('option_id', optionId);
+      const headers = await getAuthHeaders();
+      const endpoint = buildApiUrl(`/api/products/variants/options/${optionId}${productId ? `?productId=${productId}` : ''}`);
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers,
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || `Failed to delete option (status ${response.status})`);
       }
-
-      // Then delete the option itself
-      const { error } = await supabase
-        .from('product_attribute_options')
-        .delete()
-        .eq('id', optionId);
-
-      if (error) throw error;
 
       toast.success('Option deleted successfully');
       await fetchAttributes(); // Refresh attributes
@@ -354,34 +375,18 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
     }
 
     try {
-      // First, remove from product mappings if this product is using it
-      if (productId) {
-        await supabase
-          .from('product_attribute_option_mappings')
-          .delete()
-          .eq('product_id', productId)
-          .eq('attribute_id', attributeId);
-        
-        await supabase
-          .from('product_attribute_mappings')
-          .delete()
-          .eq('product_id', productId)
-          .eq('attribute_id', attributeId);
+      const headers = await getAuthHeaders();
+      const endpoint = buildApiUrl(`/api/products/variants/attributes/${attributeId}${productId ? `?productId=${productId}` : ''}`);
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers,
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || `Failed to delete attribute (status ${response.status})`);
       }
-
-      // Delete all options for this attribute
-      await supabase
-        .from('product_attribute_options')
-        .delete()
-        .eq('attribute_id', attributeId);
-
-      // Then delete the attribute itself
-      const { error } = await supabase
-        .from('product_attributes')
-        .delete()
-        .eq('id', attributeId);
-
-      if (error) throw error;
 
       toast.success('Attribute deleted successfully');
       await fetchAttributes(); // Refresh attributes
@@ -508,6 +513,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                   <div className="flex items-center gap-2">
                     {isSelected && (
                       <button
+                        type="button"
                         onClick={() => toggleExpand(attr.id)}
                         className="p-1 hover:bg-gray-200 rounded transition-colors"
                         title={isExpanded ? 'Collapse' : 'Expand'}
@@ -516,6 +522,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => deleteAttribute(attr.id)}
                       className="p-1 hover:bg-red-100 rounded transition-colors text-red-600"
                       title="Delete attribute"
@@ -578,6 +585,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                                       step="0.01"
                                     />
                                     <button
+                                      type="button"
                                       onClick={() => saveOptionPrice(attr.id, option.id)}
                                       className="p-1 hover:bg-green-100 rounded transition-colors text-green-600"
                                       title="Save price"
@@ -585,6 +593,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                                       <Check size={16} />
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => cancelEditingPrice(attr.id, option.id)}
                                       className="p-1 hover:bg-red-100 rounded transition-colors text-red-600"
                                       title="Cancel"
@@ -606,6 +615,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                                       <p className="text-xs text-[#3A3A3A]">Price adjustment</p>
                                     </div>
                                     <button
+                                      type="button"
                                       onClick={() => startEditingPrice(attr.id, option.id, option.price_modifier)}
                                       className="p-1 hover:bg-blue-100 rounded transition-colors text-blue-600"
                                       title="Edit price"
@@ -613,6 +623,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
                                       <Edit2 size={16} />
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => deleteOption(attr.id, option.id)}
                                       className="p-1 hover:bg-red-100 rounded transition-colors text-red-600"
                                       title="Delete option"
@@ -649,6 +660,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
         {!showAddAttribute ? (
           <button
+            type="button"
             onClick={() => setShowAddAttribute(true)}
             className="w-full flex items-center justify-center gap-2 text-[#FF7A19] hover:text-orange-600 font-medium"
           >
@@ -676,6 +688,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
               <Button
                 variant="primary"
                 size="sm"
+                type="button"
                 onClick={addNewAttribute}
               >
                 Create Attribute
@@ -683,6 +696,7 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
               <Button
                 variant="outline"
                 size="sm"
+                type="button"
                 onClick={() => {
                   setShowAddAttribute(false);
                   setNewAttributeName('');

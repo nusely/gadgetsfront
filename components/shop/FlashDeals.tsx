@@ -161,7 +161,14 @@ export const FlashDeals: React.FC<FlashDealsProps> = ({ limit = 4 }) => {
                   
                   if (dealProduct.product) {
                     // Existing product
-                    product = dealProduct.product;
+                    const rawQuantity = Number(dealProduct.product.stock_quantity ?? 0);
+                    const stockQuantity = Number.isFinite(rawQuantity) ? rawQuantity : 0;
+                    product = {
+                      ...dealProduct.product,
+                      stock_quantity: stockQuantity,
+                      in_stock: stockQuantity > 0,
+                      base_product_id: dealProduct.product.id,
+                    };
                   } else if (dealProduct.product_name) {
                     // Standalone product
                     product = {
@@ -177,11 +184,12 @@ export const FlashDeals: React.FC<FlashDealsProps> = ({ limit = 4 }) => {
                       brand_id: null,
                       sku: `DEAL-${dealProduct.id}`,
                       stock_quantity: 0,
-                      in_stock: true,
+                      in_stock: Boolean(dealProduct.product_id),
                       is_featured: false,
                       key_features: dealProduct.product_key_features || [],
                       specifications: dealProduct.product_specifications || {},
                       rating: 0,
+                      base_product_id: dealProduct.product_id || null,
                     };
                   }
                   
@@ -233,7 +241,14 @@ export const FlashDeals: React.FC<FlashDealsProps> = ({ limit = 4 }) => {
                     
                     if (dealProduct.product) {
                       // Existing product
-                      product = dealProduct.product;
+                      const rawQuantity = Number(dealProduct.product.stock_quantity ?? 0);
+                      const stockQuantity = Number.isFinite(rawQuantity) ? rawQuantity : 0;
+                      product = {
+                        ...dealProduct.product,
+                        stock_quantity: stockQuantity,
+                        in_stock: stockQuantity > 0,
+                        base_product_id: dealProduct.product.id,
+                      };
                     } else if (dealProduct.product_name) {
                       // Standalone product
                       product = {
@@ -249,11 +264,12 @@ export const FlashDeals: React.FC<FlashDealsProps> = ({ limit = 4 }) => {
                         brand_id: null,
                         sku: `DEAL-${dealProduct.id}`,
                         stock_quantity: 0,
-                        in_stock: true,
+                        in_stock: Boolean(dealProduct.product_id),
                         is_featured: false,
                         key_features: dealProduct.product_key_features || [],
                         specifications: dealProduct.product_specifications || {},
                         rating: 0,
+                        base_product_id: dealProduct.product_id || null,
                       };
                     }
                     

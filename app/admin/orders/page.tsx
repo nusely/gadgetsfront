@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -14,7 +14,8 @@ import {
   CheckCircle,
   XCircle,
   Truck,
-  FileText
+  FileText,
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -24,6 +25,8 @@ import toast from 'react-hot-toast';
 import { CSVExporter, OrderColumns } from '@/lib/csvExport';
 import { OrderDetailModal } from '@/components/admin/OrderDetailModal';
 import { buildApiUrl } from '@/lib/api';
+import { CreateOrderModal } from '@/components/admin/CreateOrderModal';
+import { adminSettingsService } from '@/services/adminSettings.service';
 
 interface Order {
   id: string;
@@ -49,6 +52,59 @@ export default function AdminOrdersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [allowManualOrders, setAllowManualOrders] = useState<boolean | null>(null);
+
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return orders.slice(start, start + pageSize);
+  }, [orders, currentPage]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadAutomationSettings = async () => {
+      try {
+        const settings = await adminSettingsService.getSettings({
+          keys: ['automation_allow_admin_manual_orders'],
+        });
+        if (!isMounted) {
+          return;
+        }
+
+        const rawValue = settings?.automation_allow_admin_manual_orders;
+        const normalized = typeof rawValue === 'string' ? rawValue.toLowerCase() : String(rawValue ?? 'false');
+        setAllowManualOrders(normalized === 'true');
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to load automation settings:', error);
+        }
+        if (isMounted) {
+          setAllowManualOrders(false);
+        }
+      }
+    };
+
+    loadAutomationSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    if (allowManualOrders === false) {
+      setShowCreateOrderModal(false);
+    }
+  }, [allowManualOrders]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -81,12 +137,19 @@ export default function AdminOrdersPage() {
     clearPendingOrdersNotification();
     
     // Debounce search (only when authenticated admin user is present)
+    setCurrentPage(1);
     const timeoutId = setTimeout(() => {
       fetchOrders();
     }, searchQuery ? 300 : 0);
     
     return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user, statusFilter, searchQuery, router]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const fetchOrders = async () => {
     try {
@@ -427,11 +490,22 @@ export default function AdminOrdersPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedOrders.size === orders.length && orders.length > 0) {
-      setSelectedOrders(new Set());
-    } else {
-      setSelectedOrders(new Set(orders.map(o => o.id)));
+    if (paginatedOrders.length === 0) {
+      return;
     }
+
+    const pageIds = paginatedOrders.map((order) => order.id);
+    const allSelectedOnPage = pageIds.every((id) => selectedOrders.has(id));
+
+    setSelectedOrders((prev) => {
+      const next = new Set(prev);
+      if (allSelectedOnPage) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
   };
 
   const bulkUpdateStatus = async (newStatus: string) => {
@@ -575,6 +649,16 @@ export default function AdminOrdersPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {allowManualOrders !== false && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus size={16} />}
+                  onClick={() => setShowCreateOrderModal(true)}
+                >
+                  Create Order
+                </Button>
+              )}
               {isSelectMode && selectedOrders.size > 0 && (
                 <div className="flex items-center gap-2">
                   <select
@@ -627,6 +711,11 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {allowManualOrders === false && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Manual order creation is currently disabled in settings. Re-enable “Allow Admin-created Orders” under Automation to restore the button.
+          </div>
+        )}
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="grid md:grid-cols-4 gap-4">
@@ -700,7 +789,10 @@ export default function AdminOrdersPage() {
                       <th className="text-left px-6 py-4 text-sm font-semibold text-[#1A1A1A]">
                         <input
                           type="checkbox"
-                          checked={selectedOrders.size === orders.length && orders.length > 0}
+                          checked={
+                            paginatedOrders.length > 0 &&
+                            paginatedOrders.every((order) => selectedOrders.has(order.id))
+                          }
                           onChange={toggleSelectAll}
                           className="w-4 h-4 rounded border-gray-300 text-[#FF7A19] focus:ring-[#FF7A19]"
                         />
@@ -717,7 +809,7 @@ export default function AdminOrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {orders.map((order) => (
+                  {paginatedOrders.map((order) => (
                     <tr key={order.id} className={`hover:bg-gray-50 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
                       {isSelectMode && (
                         <td className="px-6 py-4">
@@ -827,6 +919,42 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      {orders.length > 0 && (
+        <div className="container mx-auto px-4 pb-8">
+          <div className="bg-white rounded-xl shadow-lg mt-4 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="text-sm text-[#3A3A3A]">
+              Showing{' '}
+              <span className="font-semibold">
+                {(currentPage - 1) * pageSize + 1}-
+                {Math.min(currentPage * pageSize, orders.length)}
+              </span>{' '}
+              of <span className="font-semibold">{orders.length}</span> orders
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <div className="text-sm font-medium text-[#1A1A1A]">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Order Detail Modal */}
       <OrderDetailModal
         isOpen={isModalOpen && !!selectedOrderId}
@@ -838,6 +966,17 @@ export default function AdminOrdersPage() {
         onStatusUpdate={() => {
           fetchOrders();
         }}
+      />
+
+      <CreateOrderModal
+        isOpen={showCreateOrderModal}
+        onClose={() => setShowCreateOrderModal(false)}
+        onCreated={() => {
+          setShowCreateOrderModal(false);
+          setCurrentPage(1);
+          fetchOrders();
+        }}
+        adminEmail={user?.email || ''}
       />
     </div>
   );

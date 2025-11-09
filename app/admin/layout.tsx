@@ -268,7 +268,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
   ];
 
-  if (user?.role === 'superadmin') {
+  const isAuditWhitelisted = user?.email?.toLowerCase() === 'cimons@ventechgadgets.com';
+
+  if (user?.role === 'superadmin' || (user?.role === 'admin' && isAuditWhitelisted)) {
     menuItems.splice(1, 0, {
       icon: ScrollText,
       label: 'Audit Logs',

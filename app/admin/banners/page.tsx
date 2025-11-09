@@ -163,8 +163,21 @@ export default function BannersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const missingFieldLabels: string[] = [];
+    if (!formData.title.trim()) {
+      missingFieldLabels.push('Title');
+    }
+
     if (!formData.image_url) {
       toast.error('Please upload an image');
+      return;
+    }
+
+    if (missingFieldLabels.length > 0) {
+      toast.error(
+        `Please add ${missingFieldLabels.join(', ')}`,
+        { duration: 4500 }
+      );
       return;
     }
 

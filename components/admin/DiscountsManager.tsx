@@ -45,6 +45,15 @@ export function DiscountsManager() {
   });
 
   useEffect(() => {
+    if (newDiscount.type === 'percentage' && newDiscount.applies_to !== 'products') {
+      setNewDiscount((prev) => ({
+        ...prev,
+        applies_to: 'products',
+      }));
+    }
+  }, [newDiscount.type, newDiscount.applies_to]);
+
+  useEffect(() => {
     fetchDiscounts();
   }, []);
 
@@ -145,6 +154,7 @@ export function DiscountsManager() {
         valid_until: newDiscount.valid_until || null,
         usage_limit: newDiscount.usage_limit || null,
         maximum_discount: newDiscount.maximum_discount || null,
+        applies_to: newDiscount.type === 'percentage' ? 'products' : newDiscount.applies_to,
       };
 
       const { error } = await supabase.from('discounts').insert([payload]);
@@ -223,6 +233,7 @@ export function DiscountsManager() {
         valid_until: newDiscount.valid_until || null,
         usage_limit: newDiscount.usage_limit || null,
         maximum_discount: newDiscount.maximum_discount || null,
+        applies_to: newDiscount.type === 'percentage' ? 'products' : newDiscount.applies_to,
       };
 
       const { error } = await supabase
@@ -638,10 +649,16 @@ export function DiscountsManager() {
                     }
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-[#FF7A19] focus:ring-2 focus:ring-[#FF7A19]"
                   >
-                    <option value="all">Entire Order</option>
+                    <option value="all" disabled={newDiscount.type === 'percentage'}>
+                      Entire Order
+                    </option>
                     <option value="products">Products Only</option>
-                    <option value="shipping">Shipping</option>
-                    <option value="total">Order Total</option>
+                    <option value="shipping" disabled={newDiscount.type === 'percentage'}>
+                      Shipping
+                    </option>
+                    <option value="total" disabled={newDiscount.type === 'percentage'}>
+                      Order Total
+                    </option>
                   </select>
                 </div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">

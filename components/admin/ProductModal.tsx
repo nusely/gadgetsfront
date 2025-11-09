@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import { MediaPicker } from './MediaPicker';
 import { ProductVariantManager } from './ProductVariantManager';
+import { CategoryModal } from './CategoryModal';
+import { BrandModal } from './BrandModal';
 import { notificationService } from '@/services/notification.service';
 
 interface ProductModalProps {
@@ -25,6 +27,8 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
   const [attributes, setAttributes] = useState<any[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
   const [productVariants, setProductVariants] = useState<any[]>([]);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [showAddBrandModal, setShowAddBrandModal] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -442,7 +446,8 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl max-w-4xl w-full my-8">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-xl">
           <h2 className="text-xl font-bold text-[#1A1A1A]">
@@ -505,10 +510,25 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">
-                Category <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="product-category"
+                  className="block text-sm font-semibold text-[#1A1A1A]"
+                >
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setShowAddCategoryModal(true)}
+                >
+                  Add Category
+                </Button>
+              </div>
               <select
+                id="product-category"
                 value={formData.category_id}
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7A19]"
@@ -525,10 +545,25 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
 
             {/* Brand */}
             <div>
-              <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">
-                Brand <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="product-brand"
+                  className="block text-sm font-semibold text-[#1A1A1A]"
+                >
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setShowAddBrandModal(true)}
+                >
+                  Add Brand
+                </Button>
+              </div>
               <select
+                id="product-brand"
                 value={formData.brand_id}
                 onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7A19]"
@@ -855,7 +890,32 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
           }}
         />
       </div>
-    </div>
+      </div>
+
+      <CategoryModal
+        isOpen={showAddCategoryModal}
+        onClose={() => setShowAddCategoryModal(false)}
+        category={undefined}
+        onSuccess={(newCategory) => {
+          fetchCategories();
+          if (newCategory?.id) {
+            setFormData((prev) => ({ ...prev, category_id: newCategory.id }));
+          }
+        }}
+      />
+
+      <BrandModal
+        isOpen={showAddBrandModal}
+        onClose={() => setShowAddBrandModal(false)}
+        brand={undefined}
+        onSuccess={(newBrand) => {
+          fetchBrands();
+          if (newBrand?.id) {
+            setFormData((prev) => ({ ...prev, brand_id: newBrand.id }));
+          }
+        }}
+      />
+    </>
   );
 }
 

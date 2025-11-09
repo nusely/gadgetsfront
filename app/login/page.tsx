@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import { useAppDispatch } from '@/store';
 import { setUser } from '@/store/authSlice';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+import { fetchMaintenanceMode } from '@/lib/maintenance';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +27,11 @@ export default function LoginPage() {
   const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
   const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [maintenanceActiveBanner, setMaintenanceActiveBanner] = useState(false);
+
+  useEffect(() => {
+    fetchMaintenanceMode().then(setMaintenanceActiveBanner).catch(() => setMaintenanceActiveBanner(false));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -66,6 +72,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      const maintenanceActive = await fetchMaintenanceMode();
+
       const { user, session, error } = await signIn(formData);
       
       if (error) {
@@ -108,36 +116,62 @@ export default function LoginPage() {
         // Get user profile
         const profile = await getUserProfile(user.id);
         
-        if (profile) {
-          // Handle both first_name/last_name and full_name formats
-          const profileData = profile as any;
-          const firstName = profileData.first_name || '';
-          const lastName = profileData.last_name || '';
-          const fullNameFromDb = profileData.full_name || '';
-          const fullName = fullNameFromDb || `${firstName} ${lastName}`.trim() || user.email || '';
-          
-          dispatch(setUser({
-            id: user.id,
-            email: user.email || '',
-            full_name: fullName,
-            phone: profileData.phone || '',
-            avatar_url: profileData.avatar_url || undefined,
-            role: profileData.role || 'customer',
-            email_verified: user.email_confirmed_at ? true : false,
-            created_at: profileData.created_at || new Date().toISOString(),
-            updated_at: profileData.updated_at || new Date().toISOString(),
-          }));
-          
-          toast.success(`Welcome back, ${firstName || fullName.split(' ')[0] || 'User'}!`);
-          
-          // Redirect based on role
-          if (profileData.role === 'admin' || profileData.role === 'superadmin') {
-            router.push('/admin');
-          } else {
-            router.push('/');
+        if (!profile) {
+          if (maintenanceActive) {
+            await signOut();
+            toast.error('The store is currently under maintenance. Please try again soon.');
+            setErrors({
+              form: 'The store is currently under maintenance. Please try again soon.',
+            });
+            setIsLoading(false);
+            router.push('/maintenance');
+            return;
           }
+
+          router.push('/');
+          return;
+        }
+
+        if (
+          maintenanceActive &&
+          profile.role !== 'admin' &&
+          profile.role !== 'superadmin'
+        ) {
+          await signOut();
+          toast.error('The store is currently under maintenance. Please try again soon.');
+          setErrors({
+            form: 'The store is currently under maintenance. Please try again soon.',
+          });
+          setIsLoading(false);
+          router.push('/maintenance');
+          return;
+        }
+
+        // Handle both first_name/last_name and full_name formats
+        const profileData = profile as any;
+        const firstName = profileData.first_name || '';
+        const lastName = profileData.last_name || '';
+        const fullNameFromDb = profileData.full_name || '';
+        const fullName = fullNameFromDb || `${firstName} ${lastName}`.trim() || user.email || '';
+        
+        dispatch(setUser({
+          id: user.id,
+          email: user.email || '',
+          full_name: fullName,
+          phone: profileData.phone || '',
+          avatar_url: profileData.avatar_url || undefined,
+          role: profileData.role || 'customer',
+          email_verified: user.email_confirmed_at ? true : false,
+          created_at: profileData.created_at || new Date().toISOString(),
+          updated_at: profileData.updated_at || new Date().toISOString(),
+        }));
+        
+        toast.success(`Welcome back, ${firstName || fullName.split(' ')[0] || 'User'}!`);
+        
+        // Redirect based on role
+        if (profileData.role === 'admin' || profileData.role === 'superadmin') {
+          router.push('/admin');
         } else {
-          // No profile found, redirect to home
           router.push('/');
         }
       }
@@ -179,6 +213,11 @@ export default function LoginPage() {
               <div className="text-2xl font-bold text-[#FF7A19]">VENTECH</div>
             </Link>
           </div>
+          {maintenanceActiveBanner && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 text-center">
+              The store is currently undergoing maintenance. Customer sign-ins are temporarily disabled.
+            </div>
+          )}
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             Sign in to your account
           </h2>

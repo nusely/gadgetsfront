@@ -72,6 +72,7 @@ export function ProductContent({ product }: ProductContentProps) {
   }
   
   const finalPrice = (product.discount_price || product.original_price) + variantPrice;
+  const totalPrice = finalPrice * quantity;
   const productImages = product.images && product.images.length > 0 ? product.images : [product.thumbnail || '/placeholders/placeholder-product.webp'];
 
   useEffect(() => {
@@ -270,17 +271,24 @@ export function ProductContent({ product }: ProductContentProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl font-bold text-[#FF7A19]">
-                {formatCurrency(finalPrice)}
-              </span>
-              {hasDiscount && (
-                <>
-                  <span className="text-xl text-gray-400 line-through">
-                    {formatCurrency(product.original_price)}
-                  </span>
-                  <Badge variant="error">-{discountPercentage}%</Badge>
-                </>
+            <div className="flex flex-col gap-1 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-[#FF7A19]">
+                  {formatCurrency(finalPrice)}
+                </span>
+                {hasDiscount && (
+                  <>
+                    <span className="text-xl text-gray-400 line-through">
+                      {formatCurrency(product.original_price)}
+                    </span>
+                    <Badge variant="error">-{discountPercentage}%</Badge>
+                  </>
+                )}
+              </div>
+              {quantity > 1 && (
+                <span className="text-sm text-gray-600">
+                  Total for {quantity} {quantity === 1 ? 'item' : 'items'}: {formatCurrency(totalPrice)}
+                </span>
               )}
             </div>
 

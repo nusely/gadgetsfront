@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -40,6 +40,8 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   useEffect(() => {
     if (isAuthenticated && user && user.role !== 'admin' && user.role !== 'superadmin') {
@@ -176,17 +178,36 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = useMemo(() => {
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
-      u.email.toLowerCase().includes(searchLower) ||
-      u.id.toLowerCase().includes(searchLower) ||
-      u.first_name?.toLowerCase().includes(searchLower) ||
-      u.last_name?.toLowerCase().includes(searchLower) ||
-      u.phone?.toLowerCase().includes(searchLower);
-    
-    return matchesSearch;
-  });
+    return users.filter((u) => {
+      const matchesSearch =
+        u.email.toLowerCase().includes(searchLower) ||
+        u.id.toLowerCase().includes(searchLower) ||
+        u.first_name?.toLowerCase().includes(searchLower) ||
+        u.last_name?.toLowerCase().includes(searchLower) ||
+        u.phone?.toLowerCase().includes(searchLower);
+
+      return matchesSearch;
+    });
+  }, [users, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, users.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const handleExportCustomers = () => {
     const exportData = filteredUsers.map(user => ({
@@ -265,6 +286,30 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Stats */}
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-[#3A3A3A] mb-1">Total Customers</p>
+            <p className="text-2xl font-bold text-[#1A1A1A]">{users.length}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-[#3A3A3A] mb-1">Newsletter Subscribers</p>
+            <p className="text-2xl font-bold text-[#1A1A1A]">
+              {users.filter(u => u.newsletter_subscribed).length}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-[#3A3A3A] mb-1">Active This Month</p>
+            <p className="text-2xl font-bold text-[#1A1A1A]">
+              {users.filter(u => {
+                const created = new Date(u.created_at);
+                const now = new Date();
+                return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+              }).length}
+            </p>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           {/* Search */}
@@ -309,11 +354,10 @@ export default function AdminUsersPage() {
                     <th className="text-left px-6 py-4 text-sm font-semibold text-[#1A1A1A]">Joined</th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-[#1A1A1A]">Newsletter</th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-[#1A1A1A]">Orders</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-[#1A1A1A]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredUsers.map((userData) => (
+                  {paginatedUsers.map((userData) => (
                     <tr key={userData.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -365,49 +409,48 @@ export default function AdminUsersPage() {
                           </span>
                         </Link>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/admin/users/${userData.id}`}>
-                            <button 
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="View Details"
-                            >
-                              <Eye size={16} className="text-[#3A3A3A]" />
-                            </button>
-                          </Link>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+
+        {filteredUsers.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg mt-4 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="text-sm text-[#3A3A3A]">
+              Showing{' '}
+              <span className="font-semibold">
+                {(currentPage - 1) * pageSize + 1}-
+                {Math.min(currentPage * pageSize, filteredUsers.length)}
+              </span>{' '}
+              of <span className="font-semibold">{filteredUsers.length}</span> customers
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <div className="text-sm font-medium text-[#1A1A1A]">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
         </div>
 
-        {/* Stats */}
-        <div className="grid md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-white rounded-lg p-4 border">
-            <p className="text-sm text-[#3A3A3A] mb-1">Total Customers</p>
-            <p className="text-2xl font-bold text-[#1A1A1A]">{users.length}</p>
-          </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <p className="text-sm text-[#3A3A3A] mb-1">Newsletter Subscribers</p>
-            <p className="text-2xl font-bold text-[#1A1A1A]">
-              {users.filter(u => u.newsletter_subscribed).length}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <p className="text-sm text-[#3A3A3A] mb-1">Active This Month</p>
-            <p className="text-2xl font-bold text-[#1A1A1A]">
-              {users.filter(u => {
-                const created = new Date(u.created_at);
-                const now = new Date();
-                return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-              }).length}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

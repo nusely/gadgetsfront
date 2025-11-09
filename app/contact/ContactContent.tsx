@@ -188,7 +188,7 @@ export function ContactContent() {
             <div className="bg-gray-50 rounded-xl p-8">
               <h2 className="text-2xl font-bold text-[#1A1A1A] mb-6">Send us a Message</h2>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
                 <div>
                   <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">
                     Full Name *

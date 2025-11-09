@@ -11,7 +11,7 @@ interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   category?: any;
-  onSuccess: () => void;
+  onSuccess: (category?: any) => void;
 }
 
 export function CategoryModal({ isOpen, onClose, category, onSuccess }: CategoryModalProps) {
@@ -139,22 +139,36 @@ export function CategoryModal({ isOpen, onClose, category, onSuccess }: Category
         updated_at: new Date().toISOString(),
       };
 
+      let resultCategory: any = category || null;
+
       if (category) {
-        const { error } = await supabase
+        const { data: updatedCategory, error } = await supabase
           .from('categories')
           .update(categoryData)
           .eq('id', category.id);
 
         if (error) throw error;
         toast.success('Category updated successfully');
+        resultCategory = updatedCategory?.[0] || { ...category, ...categoryData };
       } else {
-        const { error } = await supabase.from('categories').insert(categoryData);
+        const { data: insertedCategories, error } = await supabase
+          .from('categories')
+          .insert(categoryData)
+          .select()
+          .limit(1);
 
         if (error) throw error;
         toast.success('Category created successfully');
+
+        resultCategory = insertedCategories && insertedCategories.length > 0
+          ? insertedCategories[0]
+          : { ...categoryData };
+        onSuccess(resultCategory);
+        onClose();
+        return;
       }
 
-      onSuccess();
+      onSuccess(resultCategory || undefined);
       onClose();
     } catch (error: any) {
       console.error('Error saving category:', error);
