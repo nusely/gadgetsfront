@@ -459,19 +459,59 @@ export default function AdminDashboard() {
         console.error('Error fetching wishlist users:', error);
       }
 
-      // Abandoned carts - pending orders older than 24 hours
+      // Abandoned carts - users who added to cart but have been inactive for 24h+
       let abandonedCount = 0;
       try {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count, error: abandonedError } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending')
-          .lt('created_at', twentyFourHoursAgo);
+        const { data: abandonedItems, error: abandonedError } = await supabase
+          .from('cart_items')
+          .select(`
+            id,
+            user_id,
+            quantity,
+            created_at,
+            updated_at,
+            product:products(id),
+            user:users!cart_items_user_id_fkey(id, email)
+          `)
+          .lt('updated_at', twentyFourHoursAgo)
+          .order('updated_at', { ascending: false });
 
-        if (!abandonedError) {
-          abandonedCount = count || 0;
+        if (abandonedError) {
+          throw abandonedError;
         }
+
+        const uniqueCartKeys = new Set<string>();
+
+        type CartItemRow = {
+          id: string;
+          user_id: string | null;
+          quantity: number | null;
+          product: { id: string } | Array<{ id: string }> | null;
+          user: { id?: string | null; email?: string | null } | Array<{ id?: string | null; email?: string | null }> | null;
+        };
+
+        const rows: CartItemRow[] = Array.isArray(abandonedItems) ? (abandonedItems as CartItemRow[]) : [];
+
+        rows
+          .filter((item) => {
+            const quantity = item.quantity ?? 0;
+            const productData = item.product;
+            const hasProduct = Array.isArray(productData)
+              ? productData.length > 0
+              : Boolean(productData);
+            return quantity > 0 && hasProduct;
+          })
+          .forEach((item) => {
+            const userRecord = Array.isArray(item.user) ? item.user[0] : item.user;
+            const email = typeof userRecord?.email === 'string' && userRecord.email.trim().length > 0
+              ? userRecord.email.trim().toLowerCase()
+              : null;
+            const key = email || item.user_id || item.id;
+            uniqueCartKeys.add(String(key));
+          });
+
+        abandonedCount = uniqueCartKeys.size;
       } catch (error) {
         console.error('Error fetching abandoned carts:', error);
       }
