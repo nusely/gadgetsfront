@@ -66,7 +66,7 @@ useEffect(() => {
           : 0;
 
     const selectedVariants = item.selected_variants || {};
-    const variantAdjustments = Object.values(selectedVariants).reduce((sum, variant: any) => {
+    const variantAdjustments = Object.values(selectedVariants as Record<string, any>).reduce((sum: number, variant: any) => {
       if (!variant || typeof variant !== 'object') return sum;
       const adjustmentRaw = variant.price_modifier ?? variant.price_adjustment ?? 0;
       const adjustment = typeof adjustmentRaw === 'number'
