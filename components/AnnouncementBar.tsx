@@ -6,6 +6,8 @@ import { buildApiUrl } from '@/lib/api';
 
 const SETTINGS_ENDPOINT = '/api/settings?keys=announcement_bar_message,maintenance_mode';
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const BLINK_INTERVAL_MS = 15 * 1000; // 15 seconds
+const BLINK_DURATION_MS = 1000; // Blink for 1 second
 
 export function AnnouncementBar() {
   const [message, setMessage] = useState<string>('');
@@ -13,6 +15,7 @@ export function AnnouncementBar() {
   const [dismissed, setDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const previousMessageRef = useRef<string>('');
+  const [isBlinking, setIsBlinking] = useState(false);
 
   const fetchAnnouncement = async () => {
     try {
@@ -53,6 +56,21 @@ export function AnnouncementBar() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    let timeoutId: number | undefined;
+    const intervalId = window.setInterval(() => {
+      setIsBlinking(true);
+      timeoutId = window.setTimeout(() => setIsBlinking(false), BLINK_DURATION_MS);
+    }, BLINK_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
   if (isLoading) {
     return null;
   }
@@ -62,15 +80,19 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="bg-[#1A1A1A] text-white">
-      <div className="container mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-4">
-        <span className="text-xs sm:text-sm font-medium tracking-wide leading-tight">
+    <div className="bg-[#FF7A19] text-white">
+      <div className="relative container mx-auto px-3 sm:px-4 py-2 flex items-center justify-center text-center">
+        <span
+          className={`text-xs sm:text-sm font-medium tracking-wide leading-tight ${
+            isBlinking ? 'animate-pulse' : ''
+          }`}
+        >
           {message}
         </span>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="inline-flex items-center justify-center rounded-full p-1.5 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white focus-visible:ring-offset-[#1A1A1A]"
+          className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-full p-1.5 transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/70 focus-visible:ring-offset-[#FF7A19]"
           aria-label="Dismiss announcement"
         >
           <X size={14} strokeWidth={2.5} />

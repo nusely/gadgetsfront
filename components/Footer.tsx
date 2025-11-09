@@ -199,8 +199,17 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 pt-6 text-center">
-          <p className="text-sm text-[#FF7A19]">
-            &copy; {new Date().getFullYear()} {storeName}. All rights reserved. Powered by Cimons.
+          <p className="text-sm text-gray-400">
+            &copy; {new Date().getFullYear()} {storeName}. All rights reserved. Powered by{' '}
+            <a
+              href="https://cimonstechnologies.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FF7A19] underline underline-offset-2"
+            >
+              Cimons
+            </a>
+            .
           </p>
         </div>
       </div>
