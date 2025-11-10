@@ -49,9 +49,69 @@ export const QuickView: React.FC<QuickViewProps> = ({ product, isOpen, onClose }
       return;
     }
 
+    const rawDealPrice = (product as any)?.deal_price;
+    const rawDealDiscount = (product as any)?.deal_discount;
+
+    const dealPrice = (() => {
+      if (typeof rawDealPrice === 'number' && Number.isFinite(rawDealPrice)) {
+        return rawDealPrice;
+      }
+      if (typeof rawDealPrice === 'string') {
+        const parsed = parseFloat(rawDealPrice);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    })();
+
+    const dealDiscount = (() => {
+      if (typeof rawDealDiscount === 'number' && Number.isFinite(rawDealDiscount)) {
+        return rawDealDiscount;
+      }
+      if (typeof rawDealDiscount === 'string') {
+        const parsed = parseFloat(rawDealDiscount);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    })();
+
+    let calculatedDealPrice: number | null = null;
+    if (!dealPrice && dealDiscount && product.original_price) {
+      calculatedDealPrice = Number(
+        (product.original_price * (1 - dealDiscount / 100)).toFixed(2)
+      );
+    }
+
+    const itemPrice =
+      dealPrice ??
+      calculatedDealPrice ??
+      product.discount_price ??
+      product.original_price ??
+      0;
+
+    const rawBaseProductId = (product as any)?.base_product_id;
+    let resolvedBaseProductId: string | null = null;
+
+    if (typeof rawBaseProductId === 'string' && rawBaseProductId.trim().length > 0) {
+      resolvedBaseProductId = rawBaseProductId.trim();
+    } else if (typeof product.id === 'string' && product.id.trim().length > 0) {
+      resolvedBaseProductId = product.id.trim();
+    }
+
+    if (!resolvedBaseProductId) {
+      toast.error(
+        'This promo item is not available for online checkout yet. Please contact support to order.'
+      );
+      return;
+    }
+
     dispatch(addToCart({
       product: {
         ...product,
+        base_product_id: resolvedBaseProductId,
+        quantity: 1,
+        selected_variants: {},
+        discount_price: dealPrice ?? calculatedDealPrice ?? product.discount_price,
+        subtotal: itemPrice,
         backorder: isBackorder,
       },
       quantity: 1,
