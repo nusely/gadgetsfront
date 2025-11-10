@@ -495,7 +495,9 @@ export function ShopContent() {
                 {/* Sort */}
                 <select
                   value={filters.sortBy || 'newest'}
-                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange('sortBy', e.target.value as ProductFilters['sortBy'])
+                  }
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF7A19]"
                 >
                   <option value="newest">Newest First</option>
