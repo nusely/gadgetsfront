@@ -146,15 +146,30 @@ export default function AuthCallbackPage() {
                           if (existing && !fetchError) {
                             console.log('User profile fetched successfully (existing):', existing);
                           } else {
-                            console.error('Error fetching existing profile:', fetchError);
+                            console.warn('Could not fetch existing profile, but user can still proceed:', fetchError?.message);
                           }
                         } else {
-                          console.error('Error creating user profile (with name field):', {
-                            error: createError2,
+                          // Only log as warning since profile might exist from trigger
+                          console.warn('Profile creation attempt failed, checking if profile exists:', {
                             message: createError2.message,
                             code: createError2.code,
-                            details: createError2.details,
                           });
+                          
+                          // Try to fetch existing profile before considering it a real error
+                          const { data: existing, error: fetchError } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', user.id)
+                            .single();
+
+                          if (existing && !fetchError) {
+                            console.log('Profile exists despite creation error - user can proceed:', existing);
+                          } else {
+                            console.error('Profile creation failed and no existing profile found:', {
+                              createError: createError2.message,
+                              fetchError: fetchError?.message
+                            });
+                          }
                         }
                       } else {
                         console.log('User profile created successfully (with name field):', newProfile2);
@@ -173,15 +188,27 @@ export default function AuthCallbackPage() {
                         if (existing && !fetchError) {
                           console.log('User profile fetched successfully (existing):', existing);
                         } else {
-                          console.error('Error fetching existing profile:', fetchError);
+                          console.warn('Could not fetch existing profile, but user can still proceed:', fetchError?.message);
                         }
                       } else {
-                        console.error('Error creating user profile:', {
-                          error: createError,
-                          message: createError.message,
-                          code: createError.code,
-                          details: createError.details,
-                        });
+                        // Only log as warning and try to fetch existing profile
+                        console.warn('Initial profile creation failed, trying alternative approach:', createError.message);
+                        
+                        // Check if profile exists (might have been created by database trigger)
+                        const { data: existing, error: fetchError } = await supabase
+                          .from('users')
+                          .select('*')
+                          .eq('id', user.id)
+                          .single();
+
+                        if (existing && !fetchError) {
+                          console.log('Profile exists despite creation error - user can proceed:', existing);
+                        } else {
+                          console.error('Profile creation failed and no existing profile found:', {
+                            createError: createError.message,
+                            fetchError: fetchError?.message
+                          });
+                        }
                       }
                     }
                   } else {

@@ -1,5 +1,10 @@
 // Format currency to GHS (Ghanaian Cedis)
 export const formatCurrency = (amount: number): string => {
+  // Handle NaN, null, undefined, and invalid numbers
+  if (isNaN(amount) || amount === null || amount === undefined) {
+    return 'GH₵0.00';
+  }
+  
   return new Intl.NumberFormat('en-GH', {
     style: 'currency',
     currency: 'GHS',

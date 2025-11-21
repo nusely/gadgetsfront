@@ -255,20 +255,29 @@ export function ProductVariantManager({ productId, onVariantChange }: ProductVar
   };
 
   const toggleOption = (attributeId: string, optionId: string) => {
-    setProductVariants(productVariants.map(variant => {
-      if (variant.attribute_id === attributeId) {
-        const hasOption = variant.selected_options.includes(optionId);
-        const newSelectedOptions = hasOption
-          ? variant.selected_options.filter(id => id !== optionId)
-          : [...variant.selected_options, optionId];
-        
-        return {
-          ...variant,
-          selected_options: newSelectedOptions,
-        };
-      }
-      return variant;
-    }));
+    setProductVariants(prevVariants => {
+      const newVariants = prevVariants.map(variant => {
+        if (variant.attribute_id === attributeId) {
+          const hasOption = variant.selected_options.includes(optionId);
+          const newSelectedOptions = hasOption
+            ? variant.selected_options.filter(id => id !== optionId)
+            : [...variant.selected_options, optionId];
+          
+          return {
+            ...variant,
+            selected_options: newSelectedOptions,
+          };
+        }
+        return variant;
+      });
+      
+      // Call onVariantChange immediately with the new state
+      setTimeout(() => {
+        onVariantChange(newVariants);
+      }, 0);
+      
+      return newVariants;
+    });
   };
 
 

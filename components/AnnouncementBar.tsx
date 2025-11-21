@@ -42,8 +42,11 @@ export function AnnouncementBar() {
         setDismissed(false);
       }
     } catch (error) {
+      // Silently handle errors - don't show announcement if API fails
+      setMessage('');
+      setMaintenanceMode(false);
       if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch announcement settings:', error);
+        console.warn('Announcement settings API unavailable:', error);
       }
     } finally {
       setIsLoading(false);

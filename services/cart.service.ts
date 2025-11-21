@@ -77,15 +77,26 @@ export const cartService = {
         return [];
       }
 
-      const response = await fetch(buildApiUrl('/api/cart'), {
+      const apiUrl = buildApiUrl('/api/cart');
+      console.log('🛒 Fetching cart from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        console.warn('Failed to fetch cart from backend:', response.statusText);
+        console.warn(`Failed to fetch cart from backend: ${response.status} ${response.statusText}`);
+        console.warn('API URL:', apiUrl);
+        
+        // If it's a network error, provide more helpful info
+        if (response.status === 0) {
+          console.error('❌ Network error - backend server may not be running');
+        }
+        
         return [];
       }
 

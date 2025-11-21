@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Script from 'next/script';
 import { generatePageMetadata } from '@/lib/seo.utils';
 import { generateStructuredData } from '@/lib/seo.config';
-import { ShopContent } from './ShopContent';
+import { ShopClientWrapper } from './ShopClientWrapper';
 
 export const metadata: Metadata = generatePageMetadata('shop');
 
@@ -26,7 +26,7 @@ export default function ShopPage() {
           }}
         />
       )}
-      <ShopContent />
+      <ShopClientWrapper />
     </>
   );
 }

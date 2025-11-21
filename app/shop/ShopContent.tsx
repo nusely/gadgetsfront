@@ -210,7 +210,7 @@ export function ShopContent() {
         
         setHasMore(productsData.length === productsPerPage);
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('❌ Error fetching products:', error);
       } finally {
         setIsLoading(false);
       }
@@ -526,28 +526,46 @@ export function ShopContent() {
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                 <p className="text-gray-600 mb-4">No products found</p>
+                <div className="text-xs text-gray-500 mt-4 p-4 bg-gray-50 rounded">
+                  Debug: products={products.length}, filtered={filteredProducts.length}, loading={isLoading.toString()}
+                </div>
                 <Button variant="outline" onClick={clearFilters}>
                   Clear Filters
                 </Button>
               </div>
             ) : (
               <>
-                <motion.div
+                <div
                   className={viewMode === 'grid' 
                   ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 xl:gap-6'
                   : 'space-y-4'
                 }
-                  variants={fadeInUp}
-                  custom={0.08}
+                  style={{ opacity: 1, transform: 'none' }}
                 >
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onQuickView={() => setQuickViewProduct(product)}
-                    />
-                  ))}
-                </motion.div>
+                  {/* Debug: Show raw products if filtered is empty */}
+                  {filteredProducts.length === 0 && products.length > 0 ? (
+                    <div className="col-span-full bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <p className="text-yellow-800 font-medium">Debug: Showing raw products (filtering issue detected)</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4">
+                        {products.map((product) => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            onQuickView={() => setQuickViewProduct(product)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onQuickView={() => setQuickViewProduct(product)}
+                      />
+                    ))
+                  )}
+                </div>
 
                 {/* Load More Button */}
                 {hasMore && (

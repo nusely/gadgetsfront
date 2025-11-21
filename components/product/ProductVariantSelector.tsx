@@ -151,13 +151,9 @@ export function ProductVariantSelector({
 
       setAttributes(attributesWithOptions);
 
-      // Auto-select first option for required attributes
+      // Start with no selections (all attributes show "Default" as selected)
+      // This means selectedVariants will be empty, which represents "Default" state
       const initialSelection: { [key: string]: VariantOption } = {};
-      attributesWithOptions.forEach((attr) => {
-        if (attr.options.length > 0) {
-          initialSelection[attr.id] = attr.options[0];
-        }
-      });
       setSelectedVariants(initialSelection);
     } catch (error: any) {
       console.error('Error fetching product attributes:', error);
@@ -172,38 +168,28 @@ export function ProductVariantSelector({
     // The base price will be added in ProductContent
     let total = 0;
     Object.values(selectedVariants).forEach((variant) => {
-      // Ensure price_modifier exists and is a number
-      const modifier = typeof variant?.price_modifier === 'number' ? variant.price_modifier : (parseFloat(variant?.price_modifier) || 0);
-      total += modifier;
+      if (variant) { // Only add if variant is not null
+        // Ensure price_modifier exists and is a number
+        const modifier = typeof variant?.price_modifier === 'number' ? variant.price_modifier : (parseFloat(variant?.price_modifier) || 0);
+        total += modifier;
+      }
     });
-    
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-      const variantDetails = Object.values(selectedVariants).map(v => ({ 
-        id: v.id, 
-        label: v.label, 
-        value: v.value,
-        price_modifier: v.price_modifier,
-        price_modifier_type: typeof v.price_modifier,
-        all_keys: Object.keys(v),
-        full_variant: v
-      }));
-      console.log('Variant price calculation:', {
-        selectedVariants,
-        total,
-        variantCount: Object.keys(selectedVariants).length,
-        variants: variantDetails
-      });
-    }
     
     return total;
   };
 
-  const handleVariantSelect = (attributeId: string, option: VariantOption) => {
-    setSelectedVariants((prev) => ({
-      ...prev,
-      [attributeId]: option,
-    }));
+  const handleVariantSelect = (attributeId: string, option: VariantOption | null) => {
+    setSelectedVariants((prev) => {
+      const newVariants = { ...prev };
+      if (option === null) {
+        // Remove the selection (deselect)
+        delete newVariants[attributeId];
+      } else {
+        // Select the option
+        newVariants[attributeId] = option;
+      }
+      return newVariants;
+    });
   };
 
   const toggleAttribute = (attributeId: string) => {
@@ -236,6 +222,15 @@ export function ProductVariantSelector({
       {attributes.map((attribute) => {
         const isExpanded = expandedAttributes.has(attribute.id);
         const selectedOption = selectedVariants[attribute.id];
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Attribute ${attribute.name}:`, {
+            selectedOption,
+            isSelected: !!selectedOption,
+            showingDefault: !selectedOption
+          });
+        }
 
         return (
           <div key={attribute.id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -249,11 +244,9 @@ export function ProductVariantSelector({
                   {attribute.name}
                   {attribute.is_required && <span className="text-red-500 ml-1">*</span>}
                 </span>
-                {selectedOption && (
-                  <span className="text-xs text-[#FF7A19] font-medium">
-                    ({selectedOption.label})
-                  </span>
-                )}
+                <span className="text-xs text-[#FF7A19] font-medium">
+                  {selectedOption ? `(${selectedOption.label})` : '(Default)'}
+                </span>
               </div>
               <svg
                 className={`w-5 h-5 text-gray-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -268,6 +261,40 @@ export function ProductVariantSelector({
             {/* Radio Options - Shown when expanded */}
             {isExpanded && (
               <div className="p-3 space-y-2 bg-white border-t border-gray-200">
+                {/* Default/None Option */}
+                <button
+                  onClick={() => handleVariantSelect(attribute.id, null)}
+                  className={`
+                    w-full px-3 py-2 flex items-center justify-between rounded-lg text-left transition-all
+                    ${!selectedVariants[attribute.id]
+                      ? 'bg-orange-50 border-2 border-[#FF7A19]'
+                      : 'bg-gray-50 border-2 border-transparent hover:border-gray-300'
+                    }
+                    cursor-pointer
+                  `}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`
+                        w-4 h-4 rounded-full border-2 flex items-center justify-center
+                        ${!selectedVariants[attribute.id] ? 'border-[#FF7A19]' : 'border-gray-300'}
+                      `}
+                    >
+                      {!selectedVariants[attribute.id] && (
+                        <div className="w-2 h-2 rounded-full bg-[#FF7A19]" />
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900">Default</span>
+                      <p className="text-xs text-gray-500">No upgrade</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">
+                    Base Price
+                  </span>
+                </button>
+
+                {/* Variant Options */}
                 {attribute.options.map((option) => {
                   const isSelected = selectedVariants[attribute.id]?.id === option.id;
                   // Availability: If variant is in product_attribute_option_mappings (checked in admin), it's available

@@ -409,92 +409,41 @@ export const getUserProfile = async (userId?: string) => {
             }
 
             // Profile doesn't exist, create it
+            // Start with basic required fields only
             const { data: newProfile, error: createError } = await supabase
               .from('users')
-              .insert({
-                ...profileData,
-                first_name: firstName || '',
-                last_name: lastName || '',
-                full_name: fullName || '',
-              })
+              .insert(profileData) // Only insert basic fields first
               .select()
               .single();
 
             if (createError) {
-              // If error, try with 'full_name' field only (might be the actual schema)
-              if (createError.message?.includes('column') || createError.code === '42703') {
-                const { data: newProfile2, error: createError2 } = await supabase
+              // Check if it's a duplicate key error (profile already exists)
+              if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
+                console.log('Profile already exists, fetching existing profile');
+                // Fetch the existing profile
+                const { data: existing, error: fetchError } = await supabase
                   .from('users')
-                  .insert({
-                    ...profileData,
-                    full_name: fullName,
-                  })
-                  .select()
+                  .select('*')
+                  .eq('id', user.id)
                   .single();
 
-                if (createError2) {
-                  // Check if it's a duplicate key error (profile already exists)
-                  if (createError2.code === '23505' || createError2.message?.includes('duplicate') || createError2.message?.includes('unique')) {
-                    console.log('Profile already exists, fetching existing profile');
-                    // Fetch the existing profile
-                    const { data: existing, error: fetchError } = await supabase
-                      .from('users')
-                      .select('*')
-                      .eq('id', user.id)
-                      .single();
-
-                    if (existing && !fetchError) {
-                      return {
-                        ...existing,
-                        full_name: fullName,
-                        first_name: firstName,
-                        last_name: lastName,
-                      };
-                    }
-                  }
-                  console.error('Error creating user profile (with name field):', {
-                    error: createError2,
-                    message: createError2.message,
-                    code: createError2.code,
-                    details: createError2.details,
-                  });
-                  return null;
+                if (existing && !fetchError) {
+                  return {
+                    ...existing,
+                    full_name: fullName,
+                    first_name: firstName,
+                    last_name: lastName,
+                  };
                 }
-                // Format the response to match User type
-                return {
-                  ...newProfile2,
-                  full_name: fullName,
-                  first_name: firstName,
-                  last_name: lastName,
-                };
-              } else {
-                // Check if it's a duplicate key error (profile already exists)
-                if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
-                  console.log('Profile already exists, fetching existing profile');
-                  // Fetch the existing profile
-                  const { data: existing, error: fetchError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
-
-                  if (existing && !fetchError) {
-                    return {
-                      ...existing,
-                      full_name: fullName,
-                      first_name: firstName,
-                      last_name: lastName,
-                    };
-                  }
-                }
-                console.error('Error creating user profile:', {
-                  error: createError,
-                  message: createError.message,
-                  code: createError.code,
-                  details: createError.details,
-                });
-                return null;
               }
+
+              console.error('Error creating user profile:', {
+                error: createError,
+                message: createError.message,
+                code: createError.code,
+                details: createError.details,
+              });
+              return null;
             }
 
             // Format the response to match User type

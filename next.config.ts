@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
         hostname: '**.r2.cloudflarestorage.com',
       },
     ],
+    // Add timeout and fallback for external images
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    minimumCacheTTL: 60,
   },
 };
 

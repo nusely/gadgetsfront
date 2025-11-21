@@ -16,7 +16,7 @@ import { deliveryOptionsService } from '@/services/deliveryOptions.service';
 import { DeliveryOption, AppliedTax } from '@/types/order';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
-import { discountService } from '@/services/discount.service';
+// Discount service removed
 import { settingsService } from '@/lib/settings.service';
 import { taxService, Tax as TaxRule } from '@/services/tax.service';
 
@@ -29,14 +29,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [discountCode, setDiscountCode] = useState('');
-  const [discountState, setDiscountState] = useState<{
-    code: string;
-    amount: number;
-    adjustedDeliveryFee: number;
-  } | null>(null);
-  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
-  const [discountMessage, setDiscountMessage] = useState<string | null>(null);
+  // Discount functionality removed
   const [taxRate, setTaxRate] = useState(0);
   const [taxRules, setTaxRules] = useState<TaxRule[]>([]);
 
@@ -99,12 +92,7 @@ export default function CheckoutPage() {
 
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption | null>(null);
 
-  useEffect(() => {
-    if (discountState && selectedDelivery) {
-      setDiscountState(null);
-      setDiscountMessage('Delivery option changed. Re-apply discount to confirm pricing.');
-    }
-  }, [selectedDelivery?.id, discountState]);
+  // Discount functionality removed
 
   useEffect(() => {
     const fetchTaxRate = async () => {
@@ -248,58 +236,9 @@ export default function CheckoutPage() {
     setStep(step + 1);
   };
 
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) {
-      toast.error('Enter a discount code');
-      return;
-    }
+  // Discount functionality removed
 
-    if (!selectedDelivery) {
-      toast.error('Select a delivery option before applying a discount');
-      return;
-    }
-
-    setIsApplyingDiscount(true);
-    setDiscountMessage(null);
-
-    try {
-      const payload = {
-        code: discountCode.trim().toUpperCase(),
-        subtotal,
-        deliveryFee: selectedDelivery.price,
-        items: items.map((item) => ({
-          product_id: item.id,
-          product_name: item.name,
-          quantity: item.quantity,
-          unit_price: item.discount_price || item.original_price,
-          subtotal: item.subtotal,
-        })),
-      };
-
-      const result = await discountService.applyDiscount(payload);
-
-      setDiscountState({
-        code: result.code,
-        amount: Number(result.discountAmount.toFixed(2)),
-        adjustedDeliveryFee: Number(result.adjustedDeliveryFee.toFixed(2)),
-      });
-      setDiscountCode(result.code);
-      setDiscountMessage(`Discount ${result.code} applied`);
-      toast.success('Discount applied successfully!');
-    } catch (error: any) {
-      console.error('Apply discount error:', error);
-      setDiscountState(null);
-      setDiscountMessage(error?.message || 'Failed to apply discount');
-      toast.error(error?.message || 'Failed to apply discount');
-    } finally {
-      setIsApplyingDiscount(false);
-    }
-  };
-
-  const handleRemoveDiscount = () => {
-    setDiscountState(null);
-    setDiscountMessage('Discount removed');
-  };
+  // Discount removal functionality removed
 
   const handlePlaceOrder = async () => {
     // User can proceed without login - they provide address as billing address
@@ -317,7 +256,7 @@ export default function CheckoutPage() {
     const finalDeliveryOption = selectedDelivery
       ? {
           ...selectedDelivery,
-          price: discountState ? discountState.adjustedDeliveryFee : selectedDelivery.price,
+          price: selectedDelivery.price,
         }
       : null;
 
@@ -364,8 +303,7 @@ export default function CheckoutPage() {
         delivery_option: finalDeliveryOption,
         payment_method: paymentMethod,
         notes,
-        discount_code: discountState?.code,
-        discount_amount: discountState?.amount,
+        // Discount functionality removed
         adjusted_delivery_fee: finalDeliveryOption.price,
         tax_amount: tax,
         tax_rate: effectiveTaxRate,
@@ -415,11 +353,8 @@ export default function CheckoutPage() {
   };
 
   // Calculate delivery/pickup fee (no free delivery - all options have a price)
-  const discountAmount = discountState?.amount ?? 0;
-  const deliveryFee = Math.max(
-    discountState ? discountState.adjustedDeliveryFee : selectedDelivery?.price ?? 0,
-    0
-  );
+  const discountAmount = 0;
+  const deliveryFee = Math.max(selectedDelivery?.price ?? 0, 0);
   const taxableAmount = Math.max(subtotal - discountAmount, 0);
 
   const taxComputation = useMemo(() => {
@@ -898,39 +833,7 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Discount Code</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF7A19] focus:ring-2 focus:ring-[#FF7A19]"
-                    placeholder="ENTER CODE"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleApplyDiscount}
-                    disabled={!discountCode.trim() || isApplyingDiscount || !selectedDelivery}
-                    isLoading={isApplyingDiscount}
-                  >
-                    Apply
-                  </Button>
-                </div>
-                {discountState && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveDiscount}
-                    className="text-xs text-red-600 mt-2 hover:underline"
-                  >
-                    Remove discount
-                  </button>
-                )}
-                {discountMessage && (
-                  <p className="text-xs text-gray-500 mt-2">{discountMessage}</p>
-                )}
-              </div>
+              {/* Discount code section removed */}
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
@@ -941,12 +844,7 @@ export default function CheckoutPage() {
                   <span>Delivery</span>
                   <span>{formatCurrency(deliveryFee)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <span>Discount</span>
-                    <span>-{formatCurrency(discountAmount)}</span>
-                  </div>
-                )}
+                {/* Discount display removed */}
                 {tax > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>

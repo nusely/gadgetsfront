@@ -10,6 +10,7 @@ import { QuickView } from '@/components/shop/QuickView';
 import { Reviews } from '@/components/product/Reviews';
 import { ProductVariantSelector } from '@/components/product/ProductVariantSelector';
 import { similarProductsService } from '@/services/similarProducts.service';
+import { ClientOnly } from '@/components/ClientOnly';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { addToCart } from '@/store/cartSlice';
 import { 
@@ -54,6 +55,7 @@ export function ProductContent({ product }: ProductContentProps) {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { allowBackorders } = useAllowBackorders();
   const stockQuantity = Number(product.stock_quantity ?? 0);
   const isOutOfStock = !product.in_stock || stockQuantity <= 0;
@@ -64,6 +66,11 @@ export function ProductContent({ product }: ProductContentProps) {
   const discountPercentage = hasDiscount
     ? Math.round(((product.original_price - product.discount_price!) / product.original_price) * 100)
     : 0;
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // Debug: Log price values to identify doubling issue
   if (process.env.NODE_ENV === 'development') {
@@ -77,8 +84,38 @@ export function ProductContent({ product }: ProductContentProps) {
     });
   }
   
-  const finalPrice = (product.discount_price || product.original_price) + variantPrice;
+  // Use the current product price as the default, only add variant adjustments if variants are selected
+  // The product service transforms data.price to product.original_price
+  const rawPrice = product.original_price || 0;
+  const rawDiscountPrice = product.discount_price;
+  
+  const productPrice = parseFloat(rawPrice) || 0;
+  const discountPrice = rawDiscountPrice ? parseFloat(rawDiscountPrice) : null;
+  
+  // Use discount price if available, otherwise use regular price
+  const basePrice = discountPrice || productPrice;
+  const safeVariantPrice = isNaN(variantPrice) ? 0 : variantPrice;
+  const finalPrice = basePrice + safeVariantPrice;
   const totalPrice = finalPrice * quantity;
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Price calculation:', {
+      allProductFields: Object.keys(product),
+      rawPrice: rawPrice,
+      rawDiscountPrice: rawDiscountPrice,
+      productPriceField: product.price,
+      originalPriceField: product.original_price,
+      discountPriceField: product.discount_price,
+      parsedProductPrice: productPrice,
+      parsedDiscountPrice: discountPrice,
+      basePrice,
+      variantPrice,
+      safeVariantPrice,
+      finalPrice,
+      totalPrice
+    });
+  }
   const productImages = product.images && product.images.length > 0 ? product.images : [product.thumbnail || '/placeholders/placeholder-product.webp'];
 
   useEffect(() => {
@@ -112,7 +149,9 @@ export function ProductContent({ product }: ProductContentProps) {
         variants,
         totalPrice,
         basePrice: product.discount_price || product.original_price,
-        finalPrice: (product.discount_price || product.original_price) + totalPrice
+        finalPrice: (product.discount_price || product.original_price) + totalPrice,
+        originalProductPrice: product.price,
+        discountPrice: product.discount_price
       });
     }
   };
@@ -207,6 +246,27 @@ export function ProductContent({ product }: ProductContentProps) {
         : product.key_features)
     : [];
 
+  // Show loading state during hydration to prevent hydration mismatch
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-6"></div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="aspect-square bg-gray-200 rounded-xl"></div>
+              <div className="space-y-4">
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-12 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
@@ -247,24 +307,27 @@ export function ProductContent({ product }: ProductContentProps) {
               />
             </div>
             {productImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {productImages.slice(0, 4).map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? 'border-[#FF7A19]' : 'border-transparent'
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} thumbnail ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
+              <ClientOnly fallback={<div className="h-20 bg-gray-100 rounded animate-pulse"></div>}>
+                <div className="grid grid-cols-4 gap-2">
+                  {productImages.slice(0, 4).map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImage === index ? 'border-[#FF7A19]' : 'border-transparent'
+                      }`}
+                      suppressHydrationWarning
+                    >
+                      <Image
+                        src={image}
+                        alt={`${product.name} thumbnail ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </ClientOnly>
             )}
           </div>
 
@@ -329,36 +392,40 @@ export function ProductContent({ product }: ProductContentProps) {
             </div>
 
             {/* Quantity & Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="flex items-center gap-3 border border-gray-300 rounded-lg p-2">
-                <button
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                  className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Minus size={20} />
-                </button>
-                <span className="w-12 text-center font-semibold">{quantity}</span>
-                <button
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={!allowBackorders && (stockQuantity === 0 || quantity >= stockQuantity)}
-                  className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus size={20} />
-                </button>
-              </div>
+            <ClientOnly fallback={<div className="h-12 bg-gray-100 rounded animate-pulse mb-6"></div>}>
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex items-center gap-3 border border-gray-300 rounded-lg p-2">
+                  <button
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    suppressHydrationWarning
+                  >
+                    <Minus size={20} />
+                  </button>
+                  <span className="w-12 text-center font-semibold">{quantity}</span>
+                  <button
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={!allowBackorders && (stockQuantity === 0 || quantity >= stockQuantity)}
+                    className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    suppressHydrationWarning
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
 
-              <Button
-                variant="primary"
-                size="lg"
-                icon={<ShoppingCart size={20} />}
-                onClick={handleAddToCart}
-                disabled={!allowBackorders && isOutOfStock}
-                className="flex-1"
-              >
-                {isBackorder ? 'Backorder Item' : isInCart ? 'In Cart' : 'Add to Cart'}
-              </Button>
-            </div>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  icon={<ShoppingCart size={20} />}
+                  onClick={handleAddToCart}
+                  disabled={!allowBackorders && isOutOfStock}
+                  className="flex-1"
+                >
+                  {isBackorder ? 'Backorder Item' : isInCart ? 'In Cart' : 'Add to Cart'}
+                </Button>
+              </div>
+            </ClientOnly>
 
             <div className="flex gap-3 mb-6">
               <Button
@@ -402,21 +469,24 @@ export function ProductContent({ product }: ProductContentProps) {
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="flex gap-4 border-b border-gray-200">
-            {['description', 'specs', 'reviews'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`pb-3 px-4 font-semibold transition-colors ${
-                  activeTab === tab
-                    ? 'text-[#FF7A19] border-b-2 border-[#FF7A19]'
-                    : 'text-gray-600 hover:text-[#FF7A19]'
-                }`}
-              >
-                {tab === 'specs' ? 'Specs' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
+          <ClientOnly fallback={<div className="h-12 bg-gray-100 rounded animate-pulse mb-4"></div>}>
+            <div className="flex gap-4 border-b border-gray-200">
+              {['description', 'specs', 'reviews'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`pb-3 px-4 font-semibold transition-colors ${
+                    activeTab === tab
+                      ? 'text-[#FF7A19] border-b-2 border-[#FF7A19]'
+                      : 'text-gray-600 hover:text-[#FF7A19]'
+                  }`}
+                  suppressHydrationWarning
+                >
+                  {tab === 'specs' ? 'Specs' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+          </ClientOnly>
 
           <div className="mt-6">
             {activeTab === 'description' && (

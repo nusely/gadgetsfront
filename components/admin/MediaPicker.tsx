@@ -41,7 +41,8 @@ export function MediaPicker({
     if (searchQuery) {
       filtered = filtered.filter(file =>
         file.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        file.url.toLowerCase().includes(searchQuery.toLowerCase())
+        file.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (file as any).folder?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     setFilteredFiles(filtered);
@@ -50,7 +51,8 @@ export function MediaPicker({
   const fetchFiles = async () => {
     try {
       setLoading(true);
-      const mediaFiles = await mediaService.listFiles(folder);
+      // Always fetch ALL files from R2, regardless of folder parameter
+      const mediaFiles = await mediaService.listFiles('all');
       setFiles(mediaFiles);
       setFilteredFiles(mediaFiles);
     } catch (error: any) {
@@ -129,9 +131,9 @@ export function MediaPicker({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-[#1A1A1A]">Select Media</h2>
+            <h2 className="text-xl font-bold text-[#1A1A1A]">Media Library</h2>
             <p className="text-sm text-[#3A3A3A] mt-1">
-              {multiple ? 'Select multiple images' : 'Choose an image or upload a new one'}
+              {multiple ? 'Select multiple images from all folders' : 'Choose an image from all folders or upload a new one'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -231,6 +233,14 @@ export function MediaPicker({
                         target.src = '/placeholders/placeholder-image.webp';
                       }}
                     />
+                    
+                    {/* Folder indicator */}
+                    {(file as any).folder && (
+                      <div className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                        {(file as any).folder}
+                      </div>
+                    )}
+                    
                     {isSelected && (
                       <div className="absolute inset-0 bg-[#FF7A19]/20 flex items-center justify-center">
                         <div className="w-8 h-8 bg-[#FF7A19] rounded-full flex items-center justify-center">

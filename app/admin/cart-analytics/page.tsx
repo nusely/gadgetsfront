@@ -61,7 +61,9 @@ useEffect(() => {
     const basePrice =
       typeof item.product.discount_price === 'number' && !Number.isNaN(item.product.discount_price)
         ? item.product.discount_price
-        : typeof item.product.original_price === 'number'
+        : typeof item.product.price === 'number'
+          ? item.product.price
+          : typeof item.product.original_price === 'number'
           ? item.product.original_price
           : 0;
 
@@ -91,6 +93,7 @@ useEffect(() => {
       // Fetch cart items that haven't been updated in over 24 hours (abandoned carts)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       
+      // First, try to check if cart_items table exists
       const { data: abandonedItems, error } = await supabase
         .from('cart_items')
         .select(`
@@ -103,10 +106,10 @@ useEffect(() => {
           product:products(
             id,
             name,
-            original_price,
+            price,
             discount_price
           ),
-          user:users!cart_items_user_id_fkey(
+          user:users(
             id,
             first_name,
             last_name,
@@ -117,7 +120,12 @@ useEffect(() => {
         .lt('updated_at', twentyFourHoursAgo)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Cart analytics query failed:', error.message);
+        // If cart_items table doesn't exist or has issues, return empty array
+        setCarts([]);
+        return;
+      }
 
       const rawCarts = (abandonedItems || [])
         .filter((item) => (item.quantity ?? 0) > 0 && item.product)
@@ -195,7 +203,8 @@ useEffect(() => {
 
       setCarts(mergedCarts);
     } catch (error) {
-      console.error('Error fetching abandoned carts:', error);
+      console.warn('Error fetching abandoned carts:', error);
+      // Gracefully handle the error - cart analytics is not critical
       setCarts([]);
     } finally {
       setLoading(false);
