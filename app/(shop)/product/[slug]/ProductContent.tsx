@@ -104,7 +104,6 @@ export function ProductContent({ product }: ProductContentProps) {
       allProductFields: Object.keys(product),
       rawPrice: rawPrice,
       rawDiscountPrice: rawDiscountPrice,
-      productPriceField: product.price,
       originalPriceField: product.original_price,
       discountPriceField: product.discount_price,
       parsedProductPrice: productPrice,
