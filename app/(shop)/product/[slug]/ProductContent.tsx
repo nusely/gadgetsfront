@@ -89,8 +89,8 @@ export function ProductContent({ product }: ProductContentProps) {
   const rawPrice = product.original_price || 0;
   const rawDiscountPrice = product.discount_price;
   
-  const productPrice = parseFloat(rawPrice) || 0;
-  const discountPrice = rawDiscountPrice ? parseFloat(rawDiscountPrice) : null;
+  const productPrice = typeof rawPrice === 'string' ? parseFloat(rawPrice) : (rawPrice || 0);
+  const discountPrice = rawDiscountPrice ? (typeof rawDiscountPrice === 'string' ? parseFloat(rawDiscountPrice) : rawDiscountPrice) : null;
   
   // Use discount price if available, otherwise use regular price
   const basePrice = discountPrice || productPrice;
