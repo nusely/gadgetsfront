@@ -149,7 +149,7 @@ export function ProductContent({ product }: ProductContentProps) {
         totalPrice,
         basePrice: product.discount_price || product.original_price,
         finalPrice: (product.discount_price || product.original_price) + totalPrice,
-        originalProductPrice: product.price,
+        originalProductPrice: product.original_price,
         discountPrice: product.discount_price
       });
     }
